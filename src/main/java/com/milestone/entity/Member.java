@@ -31,11 +31,11 @@ public class Member {
     @Column(name = "member_email", nullable = false, length = 30, unique = true)
     private String memberEmail;
 
-    @Column(name = "member_password", nullable = false, length = 20)
+    @Column(name = "member_password", nullable = false, length = 100)
     private String memberPassword;
 
-    @Column(name = "member_phone", nullable = false)
-    private Integer memberPhone;
+    @Column(name = "member_phone", length = 20)
+    private String memberPhone;
 
     @Column(name = "member_photo", length = 1000)
     private String memberPhoto;
@@ -49,7 +49,13 @@ public class Member {
     @Column(name = "member_qualify", length = 10)
     private String memberQualify;
 
+    @Column(name = "member_status", nullable = false, columnDefinition = "VARCHAR(10) DEFAULT 'active'")
+    private String memberStatus = "active";
+
     @CreationTimestamp
     @Column(name = "member_joindate", nullable = false, updatable = false)
     private LocalDateTime memberJoindate;
+
+    @Column(name = "member_lastlogin")
+    private LocalDateTime memberLastlogin;
 }

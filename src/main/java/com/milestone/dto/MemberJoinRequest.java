@@ -32,7 +32,7 @@ public class MemberJoinRequest {
     @Size(min = 6, max = 20, message = "비밀번호는 6자 이상 20자 이하로 입력해주세요.")
     private String memberPassword;
 
-    private Integer memberPhone;
+    private String memberPhone;
 
     private String memberPhoto;
 
