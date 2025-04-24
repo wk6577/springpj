@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -91,6 +92,54 @@ public class BoardService {
         long replyCount = replyRepository.countByBoardBoardNoAndReplyStatus(boardNo, "active");
 
         return BoardResponse.fromEntity(board, tags, isLiked, isScraped, imageUrl, replyCount);
+    }
+
+    /**
+     * ID 목록으로 게시물 조회
+     */
+    @Transactional(readOnly = true)
+    public List<BoardResponse> getBoardsByIds(List<Long> boardIds, HttpSession session) {
+        if (boardIds == null || boardIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        Long currentMemberNo = (Long) session.getAttribute(SESSION_KEY);
+
+        List<Board> boards = boardRepository.findByBoardNoIn(boardIds);
+
+        // 결과 목록을 원래 ID 순서대로 정렬
+        Map<Long, Board> boardMap = boards.stream()
+                .collect(Collectors.toMap(Board::getBoardNo, board -> board));
+
+        List<BoardResponse> result = new ArrayList<>();
+
+        for (Long boardId : boardIds) {
+            Board board = boardMap.get(boardId);
+            if (board != null) {
+                boolean isLiked = false;
+                boolean isScraped = false;
+
+                if (currentMemberNo != null) {
+                    isLiked = likeRepository.existsByMemberMemberNoAndLikeTypeAndLikeTypeNo(
+                            currentMemberNo, "board", boardId);
+                    isScraped = scrapRepository.existsByMemberMemberNoAndBoardBoardNo(
+                            currentMemberNo, boardId);
+                }
+
+                String imageUrl = null;
+                List<BoardImage> images = boardImageRepository.findByBoardBoardNoOrderByBoardImageOrderAsc(boardId);
+                if (!images.isEmpty()) {
+                    imageUrl = images.get(0).getBoardImagePath();
+                }
+
+                List<String> tags = tagService.getBoardTags(boardId);
+                long replyCount = replyRepository.countByBoardBoardNoAndReplyStatus(boardId, "active");
+
+                result.add(BoardResponse.fromEntity(board, tags, isLiked, isScraped, imageUrl, replyCount));
+            }
+        }
+
+        return result;
     }
 
     /**

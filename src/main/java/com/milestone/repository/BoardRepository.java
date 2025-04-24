@@ -26,4 +26,7 @@ public interface BoardRepository extends JpaRepository<Board, Long> {
 
     // 멤버와 타입으로 게시물 조회
     List<Board> findByMemberMemberNoAndBoardTypeOrderByBoardInputdateDesc(Long memberNo, String boardType);
+
+    // ID 목록으로 게시물 조회
+    List<Board> findByBoardNoIn(List<Long> boardIds);
 }

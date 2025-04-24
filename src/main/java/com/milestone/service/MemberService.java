@@ -5,6 +5,7 @@ import com.milestone.dto.MemberLoginRequest;
 import com.milestone.dto.MemberResponse;
 import com.milestone.entity.Member;
 import com.milestone.repository.MemberRepository;
+import com.milestone.util.PasswordUtils;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,12 +44,15 @@ public class MemberService {
         }
 
         try {
+            // 비밀번호 암호화
+            String hashedPassword = PasswordUtils.hashPassword(request.getMemberPassword());
+
             // Member 엔티티 생성 및 저장
             Member member = Member.builder()
                     .memberName(request.getMemberName())
                     .memberNickname(request.getMemberNickname())
                     .memberEmail(request.getMemberEmail())
-                    .memberPassword(request.getMemberPassword()) // 실제로는 암호화 처리 필요
+                    .memberPassword(hashedPassword)
                     .memberPhone(request.getMemberPhone())
                     .memberPhoto(request.getMemberPhoto())
                     .memberIntroduce(request.getMemberIntroduce())
@@ -79,8 +83,8 @@ public class MemberService {
             Member member = memberRepository.findByMemberEmail(request.getMemberEmail())
                     .orElseThrow(() -> new IllegalArgumentException("이메일 또는 비밀번호가 일치하지 않습니다."));
 
-            // 비밀번호 검증 (실제로는 암호화된 비밀번호 비교 필요)
-            if (!member.getMemberPassword().equals(request.getMemberPassword())) {
+            // 비밀번호 검증
+            if (!PasswordUtils.verifyPassword(request.getMemberPassword(), member.getMemberPassword())) {
                 logger.warn("비밀번호 불일치: {}", request.getMemberEmail());
                 throw new IllegalArgumentException("이메일 또는 비밀번호가 일치하지 않습니다.");
             }

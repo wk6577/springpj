@@ -39,9 +39,9 @@ public class BoardController {
      * 특정 게시물 조회 API
      */
     @GetMapping("/{boardNo}")
-    public ResponseEntity<BoardResponse> getBoardById(@PathVariable Long boardNo) {
+    public ResponseEntity<BoardResponse> getBoardById(@PathVariable Long boardNo, HttpSession session) {
         logger.info("게시물 조회 요청 - ID: {}", boardNo);
-        BoardResponse board = boardService.getBoardById(boardNo);
+        BoardResponse board = boardService.getBoardById(boardNo, session);
         return ResponseEntity.ok(board);
     }
 

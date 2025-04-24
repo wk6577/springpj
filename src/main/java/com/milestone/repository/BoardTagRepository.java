@@ -20,6 +20,9 @@ public interface BoardTagRepository extends JpaRepository<BoardTag, Long> {
     // 게시물별 태그 삭제
     void deleteByBoardBoardNo(Long boardNo);
 
+    // 특정 게시물의 특정 태그 삭제
+    void deleteByBoardBoardNoAndTagName(Long boardNo, String tagName);
+
     // 태그명별 게시물 태그 삭제
     void deleteByTagName(String tagName);
 

@@ -2,6 +2,7 @@ package com.milestone.service;
 
 import com.milestone.entity.Member;
 import com.milestone.entity.Notice;
+import com.milestone.repository.MemberRepository;
 import com.milestone.repository.NoticeRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -11,7 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.servlet.http.HttpSession;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -19,6 +20,7 @@ public class NotificationService {
 
     private static final Logger logger = LoggerFactory.getLogger(NotificationService.class);
     private final NoticeRepository noticeRepository;
+    private final MemberRepository memberRepository;
     private static final String SESSION_KEY = "LOGGED_IN_MEMBER";
 
     /**
@@ -26,6 +28,12 @@ public class NotificationService {
      */
     @Transactional
     public void createLikeNotification(Member sender, Member receiver, String likeType, Long likeTypeNo) {
+        // 자신의 게시물에 좋아요를 누른 경우 알림 생성하지 않음
+        if (sender.getMemberNo().equals(receiver.getMemberNo())) {
+            logger.debug("자신의 게시물에 좋아요를 누른 경우 알림 생성하지 않음 - 사용자: {}", sender.getMemberNo());
+            return;
+        }
+
         String message = "";
         if ("board".equals(likeType)) {
             message = sender.getMemberNickname() + "님이 회원님의 게시물을 좋아합니다.";
@@ -51,6 +59,12 @@ public class NotificationService {
      */
     @Transactional
     public void createReplyNotification(Member sender, Member receiver, Long boardNo, Long replyNo) {
+        // 자신의 게시물에 댓글을 작성한 경우 알림 생성하지 않음
+        if (sender.getMemberNo().equals(receiver.getMemberNo())) {
+            logger.debug("자신의 게시물에 댓글을 작성한 경우 알림 생성하지 않음 - 사용자: {}", sender.getMemberNo());
+            return;
+        }
+
         String message = sender.getMemberNickname() + "님이 회원님의 게시물에 댓글을 남겼습니다.";
 
         Notice notification = Notice.builder()
@@ -71,6 +85,12 @@ public class NotificationService {
      */
     @Transactional
     public void createFollowNotification(Member sender, Member receiver) {
+        // 자기 자신을 팔로우하는 경우 알림 생성하지 않음 (이런 경우가 없어야 하지만 안전장치로)
+        if (sender.getMemberNo().equals(receiver.getMemberNo())) {
+            logger.debug("자기 자신을 팔로우하는 경우 알림 생성하지 않음 - 사용자: {}", sender.getMemberNo());
+            return;
+        }
+
         String message = sender.getMemberNickname() + "님이 회원님을 팔로우하기 시작했습니다.";
 
         Notice notification = Notice.builder()
@@ -91,6 +111,12 @@ public class NotificationService {
      */
     @Transactional
     public void createMentionNotification(Member sender, Member receiver, String mentionType, Long mentionTypeNo) {
+        // 자기 자신을 멘션하는 경우 알림 생성하지 않음
+        if (sender.getMemberNo().equals(receiver.getMemberNo())) {
+            logger.debug("자기 자신을 멘션하는 경우 알림 생성하지 않음 - 사용자: {}", sender.getMemberNo());
+            return;
+        }
+
         String message = "";
         if ("board".equals(mentionType)) {
             message = sender.getMemberNickname() + "님이 게시물에서 회원님을 언급했습니다.";

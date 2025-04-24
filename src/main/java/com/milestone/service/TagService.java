@@ -11,6 +11,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.type.TypeReference;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -22,6 +25,7 @@ public class TagService {
     private static final Logger logger = LoggerFactory.getLogger(TagService.class);
     private final TagRepository tagRepository;
     private final BoardTagRepository boardTagRepository;
+    private final ObjectMapper objectMapper;
 
     /**
      * 게시물에 태그 저장
@@ -33,8 +37,21 @@ public class TagService {
         }
 
         for (String tagName : tagNames) {
+            // 태그 이름 유효성 검사
+            if (tagName == null || tagName.trim().isEmpty()) {
+                continue;
+            }
+
+            // 태그 이름 정리 (공백 제거, 소문자 변환)
+            String normalizedTagName = normalizeTagName(tagName);
+
             // 태그 저장 또는 기존 태그 조회
-            Tag tag = saveOrGetTag(tagName);
+            Tag tag = saveOrGetTag(normalizedTagName);
+
+            // 게시물-태그 연결 중복 검사
+            if (boardTagRepository.existsByBoardBoardNoAndTagName(board.getBoardNo(), tag.getTagName())) {
+                continue;
+            }
 
             // 게시물-태그 연결 저장
             BoardTag boardTag = BoardTag.builder()
@@ -51,11 +68,41 @@ public class TagService {
      */
     @Transactional
     public void updateBoardTags(Board board, List<String> newTagNames) {
-        // 기존 태그 삭제
-        deleteBoardTags(board);
+        // 태그 이름 정리
+        List<String> normalizedTagNames = newTagNames.stream()
+                .filter(tagName -> tagName != null && !tagName.trim().isEmpty())
+                .map(this::normalizeTagName)
+                .collect(Collectors.toList());
 
-        // 새 태그 저장
-        saveBoardTags(board, newTagNames);
+        // 기존 태그 가져오기
+        List<String> existingTags = getBoardTags(board.getBoardNo());
+
+        // 삭제할 태그 찾기 (기존 태그 중 새로운 태그 목록에 없는 것)
+        List<String> tagsToRemove = existingTags.stream()
+                .filter(tag -> !normalizedTagNames.contains(tag))
+                .collect(Collectors.toList());
+
+        // 추가할 태그 찾기 (새로운 태그 중 기존 태그 목록에 없는 것)
+        List<String> tagsToAdd = normalizedTagNames.stream()
+                .filter(tag -> !existingTags.contains(tag))
+                .collect(Collectors.toList());
+
+        // 태그 삭제
+        for (String tagName : tagsToRemove) {
+            boardTagRepository.deleteByBoardBoardNoAndTagName(board.getBoardNo(), tagName);
+        }
+
+        // 태그 추가
+        for (String tagName : tagsToAdd) {
+            Tag tag = saveOrGetTag(tagName);
+
+            BoardTag boardTag = BoardTag.builder()
+                    .board(board)
+                    .tagName(tag.getTagName())
+                    .build();
+
+            boardTagRepository.save(boardTag);
+        }
     }
 
     /**
@@ -100,6 +147,37 @@ public class TagService {
     }
 
     /**
+     * 특정 태그가 포함된 게시물 ID 목록 조회
+     */
+    @Transactional(readOnly = true)
+    public List<Long> getBoardIdsByTagName(String tagName) {
+        // 태그 이름 정규화
+        String normalizedTagName = normalizeTagName(tagName);
+
+        // 태그가 존재하는지 확인
+        boolean tagExists = tagRepository.existsByTagName(normalizedTagName);
+
+        if (!tagExists) {
+            logger.warn("요청한 태그가 존재하지 않음: {}", normalizedTagName);
+            return new ArrayList<>();
+        }
+
+        // 게시물 ID 목록 조회
+        return boardTagRepository.findBoardIdsByTagName(normalizedTagName);
+    }
+
+    /**
+     * 태그 이름 정규화 (공백 제거, 소문자 변환)
+     */
+    private String normalizeTagName(String tagName) {
+        if (tagName == null) return "";
+        // #으로 시작하면 제거
+        tagName = tagName.startsWith("#") ? tagName.substring(1) : tagName;
+        // 공백 제거, 소문자 변환
+        return tagName.trim().toLowerCase();
+    }
+
+    /**
      * JSON 문자열에서 태그 목록 추출 유틸리티 메서드
      */
     public List<String> parseTagsFromJson(String tagsJson) {
@@ -107,8 +185,16 @@ public class TagService {
             return new ArrayList<>();
         }
 
-        // JSON 배열 형식의 문자열 파싱 ("["tag1","tag2"]" 형식)
         try {
+            // JSON 배열 역직렬화
+            if (tagsJson.startsWith("[") && tagsJson.endsWith("]")) {
+                try {
+                    return objectMapper.readValue(tagsJson, new TypeReference<List<String>>() {});
+                } catch (Exception e) {
+                    logger.warn("JSON 배열 파싱 실패, 문자열 파싱 시도: {}", e.getMessage());
+                }
+            }
+
             // 따옴표, 대괄호 제거 후 쉼표로 분리
             tagsJson = tagsJson.replaceAll("[\\[\\]\"]", "");
             String[] tagArray = tagsJson.split(",");
@@ -116,6 +202,7 @@ public class TagService {
             return java.util.Arrays.stream(tagArray)
                     .map(String::trim)
                     .filter(tag -> !tag.isEmpty())
+                    .map(this::normalizeTagName)
                     .collect(Collectors.toList());
         } catch (Exception e) {
             logger.error("태그 파싱 중 오류 발생: {}", e.getMessage(), e);
