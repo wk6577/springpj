@@ -7,7 +7,10 @@ import com.milestone.entity.BoardImage;
 import com.milestone.entity.Member;
 import com.milestone.repository.BoardImageRepository;
 import com.milestone.repository.BoardRepository;
+import com.milestone.repository.LikeRepository;
 import com.milestone.repository.MemberRepository;
+import com.milestone.repository.ReplyRepository;
+import com.milestone.repository.ScrapRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,7 +27,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import java.util.Arrays;
 
 @Service
 @RequiredArgsConstructor
@@ -34,6 +36,9 @@ public class BoardService {
     private final BoardRepository boardRepository;
     private final BoardImageRepository boardImageRepository;
     private final MemberRepository memberRepository;
+    private final LikeRepository likeRepository;
+    private final ScrapRepository scrapRepository;
+    private final ReplyRepository replyRepository;
     private final TagService tagService;
     private static final String SESSION_KEY = "LOGGED_IN_MEMBER";
     private static final String UPLOAD_DIR = "./src/main/resources/static/uploads/";
@@ -52,8 +57,8 @@ public class BoardService {
     /**
      * 게시물 ID로 게시물 조회
      */
-    @Transactional(readOnly = true)
-    public BoardResponse getBoardById(Long boardNo) {
+    @Transactional
+    public BoardResponse getBoardById(Long boardNo, HttpSession session) {
         Board board = boardRepository.findById(boardNo)
                 .orElseThrow(() -> new IllegalArgumentException("게시물을 찾을 수 없습니다: " + boardNo));
 
@@ -61,7 +66,31 @@ public class BoardService {
         board.setBoardReadhit(board.getBoardReadhit() + 1);
         boardRepository.save(board);
 
-        return convertToDto(board);
+        Long currentMemberNo = (Long) session.getAttribute(SESSION_KEY);
+        boolean isLiked = false;
+        boolean isScraped = false;
+
+        if (currentMemberNo != null) {
+            isLiked = likeRepository.existsByMemberMemberNoAndLikeTypeAndLikeTypeNo(
+                    currentMemberNo, "board", boardNo);
+            isScraped = scrapRepository.existsByMemberMemberNoAndBoardBoardNo(
+                    currentMemberNo, boardNo);
+        }
+
+        // 태그 목록 조회
+        List<String> tags = tagService.getBoardTags(boardNo);
+
+        // 대표 이미지 URL 가져오기
+        String imageUrl = null;
+        List<BoardImage> images = boardImageRepository.findByBoardBoardNoOrderByBoardImageOrderAsc(boardNo);
+        if (!images.isEmpty()) {
+            imageUrl = images.get(0).getBoardImagePath();
+        }
+
+        // 댓글 수 조회
+        long replyCount = replyRepository.countByBoardBoardNoAndReplyStatus(boardNo, "active");
+
+        return BoardResponse.fromEntity(board, tags, isLiked, isScraped, imageUrl, replyCount);
     }
 
     /**
@@ -118,7 +147,7 @@ public class BoardService {
         if (request.getTags() != null && !request.getTags().isEmpty()) {
             try {
                 // JSON 문자열에서 태그 배열 추출
-                List<String> tagList = parseTagsFromJson(request.getTags());
+                List<String> tagList = tagService.parseTagsFromJson(request.getTags());
                 tagService.saveBoardTags(savedBoard, tagList);
             } catch (Exception e) {
                 logger.error("태그 처리 중 오류 발생: {}", e.getMessage(), e);
@@ -126,6 +155,7 @@ public class BoardService {
         }
 
         // 이미지 처리
+        String imageUrl = null;
         if (image != null && !image.isEmpty()) {
             try {
                 // 파일 저장
@@ -148,14 +178,36 @@ public class BoardService {
                         .boardImageOrder(0)
                         .build();
 
-                boardImageRepository.save(boardImage);
+                BoardImage savedImage = boardImageRepository.save(boardImage);
+                imageUrl = savedImage.getBoardImagePath();
             } catch (IOException e) {
                 logger.error("이미지 저장 중 오류 발생: {}", e.getMessage(), e);
                 throw new RuntimeException("이미지 저장 중 오류가 발생했습니다.", e);
             }
         }
 
-        return convertToDto(savedBoard);
+        // 응답 DTO 생성
+        return BoardResponse.builder()
+                .boardNo(savedBoard.getBoardNo())
+                .memberNo(member.getMemberNo())
+                .memberName(member.getMemberName())
+                .memberNickname(member.getMemberNickname())
+                .memberPhoto(member.getMemberPhoto())
+                .boardType(savedBoard.getBoardType())
+                .boardCategory(savedBoard.getBoardCategory())
+                .boardTitle(savedBoard.getBoardTitle())
+                .boardContent(savedBoard.getBoardContent())
+                .boardLike(savedBoard.getBoardLike())
+                .boardScrap(savedBoard.getBoardScrap())
+                .boardReadhit(savedBoard.getBoardReadhit())
+                .boardVisible(savedBoard.getBoardVisible())
+                .boardInputdate(savedBoard.getBoardInputdate())
+                .boardImage(imageUrl)
+                .tags(tagService.getBoardTags(savedBoard.getBoardNo()))
+                .isLiked(false)
+                .isScraped(false)
+                .replyCount(0L)
+                .build();
     }
 
     /**
@@ -190,7 +242,7 @@ public class BoardService {
         // 태그 처리
         if (request.getTags() != null) {
             try {
-                List<String> tagList = parseTagsFromJson(request.getTags());
+                List<String> tagList = tagService.parseTagsFromJson(request.getTags());
                 tagService.updateBoardTags(updatedBoard, tagList);
             } catch (Exception e) {
                 logger.error("태그 업데이트 중 오류 발생: {}", e.getMessage(), e);
@@ -229,6 +281,10 @@ public class BoardService {
      * 게시물 엔티티를 DTO로 변환
      */
     private BoardResponse convertToDto(Board board) {
+        // 사용자의 좋아요/스크랩 상태는 현재 세션 정보가 없으므로 false로 초기화
+        boolean isLiked = false;
+        boolean isScraped = false;
+
         // 게시물 이미지 URL 가져오기
         String imageUrl = null;
         List<BoardImage> images = boardImageRepository.findByBoardBoardNoOrderByBoardImageOrderAsc(board.getBoardNo());
@@ -239,11 +295,17 @@ public class BoardService {
         // 태그 목록 가져오기
         List<String> tags = tagService.getBoardTags(board.getBoardNo());
 
+        // 댓글 수 조회
+        long replyCount = replyRepository.countByBoardBoardNoAndReplyStatus(board.getBoardNo(), "active");
+
         return BoardResponse.builder()
                 .boardNo(board.getBoardNo())
                 .memberNo(board.getMember().getMemberNo())
+                .memberName(board.getMember().getMemberName())
                 .memberNickname(board.getMember().getMemberNickname())
+                .memberPhoto(board.getMember().getMemberPhoto())
                 .boardType(board.getBoardType())
+                .boardCategory(board.getBoardCategory())
                 .boardTitle(board.getBoardTitle())
                 .boardContent(board.getBoardContent())
                 .boardLike(board.getBoardLike())
@@ -253,24 +315,9 @@ public class BoardService {
                 .boardInputdate(board.getBoardInputdate())
                 .boardImage(imageUrl)
                 .tags(tags)
+                .isLiked(isLiked)
+                .isScraped(isScraped)
+                .replyCount(replyCount)
                 .build();
-    }
-
-    /**
-     * JSON 문자열에서 태그 배열 추출
-     */
-    private List<String> parseTagsFromJson(String tagsJson) {
-        if (tagsJson == null || tagsJson.isEmpty()) {
-            return new ArrayList<>();
-        }
-
-        // 간단한 JSON 배열 파싱 ("[tag1, tag2, tag3]" 형식)
-        tagsJson = tagsJson.replaceAll("[\\[\\]\"]", "");
-        String[] tagArray = tagsJson.split(",");
-
-        return Arrays.stream(tagArray)
-                .map(String::trim)
-                .filter(tag -> !tag.isEmpty())
-                .collect(Collectors.toList());
     }
 }

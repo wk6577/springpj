@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -96,5 +97,29 @@ public class TagService {
     @Transactional(readOnly = true)
     public List<String> getPopularTags(int limit) {
         return boardTagRepository.findMostUsedTags(limit);
+    }
+
+    /**
+     * JSON 문자열에서 태그 목록 추출 유틸리티 메서드
+     */
+    public List<String> parseTagsFromJson(String tagsJson) {
+        if (tagsJson == null || tagsJson.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        // JSON 배열 형식의 문자열 파싱 ("["tag1","tag2"]" 형식)
+        try {
+            // 따옴표, 대괄호 제거 후 쉼표로 분리
+            tagsJson = tagsJson.replaceAll("[\\[\\]\"]", "");
+            String[] tagArray = tagsJson.split(",");
+
+            return java.util.Arrays.stream(tagArray)
+                    .map(String::trim)
+                    .filter(tag -> !tag.isEmpty())
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            logger.error("태그 파싱 중 오류 발생: {}", e.getMessage(), e);
+            return new ArrayList<>();
+        }
     }
 }

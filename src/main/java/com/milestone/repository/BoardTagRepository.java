@@ -1,6 +1,5 @@
 package com.milestone.repository;
 
-import com.milestone.entity.Board;
 import com.milestone.entity.BoardTag;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -30,4 +29,12 @@ public interface BoardTagRepository extends JpaRepository<BoardTag, Long> {
 
     // 특정 게시물에 대한 태그 존재 여부 확인
     boolean existsByBoardBoardNoAndTagName(Long boardNo, String tagName);
+
+    // 특정 태그를 포함하는 게시물 ID 목록 조회
+    @Query(value = "SELECT DISTINCT board_no FROM board_tag WHERE tag_name = :tagName", nativeQuery = true)
+    List<Long> findBoardIdsByTagName(@Param("tagName") String tagName);
+
+    // 특정 태그 목록에 해당하는 게시물 ID 조회
+    @Query(value = "SELECT DISTINCT bt.board_no FROM board_tag bt WHERE bt.tag_name IN :tagNames GROUP BY bt.board_no", nativeQuery = true)
+    List<Long> findBoardIdsByTagNames(@Param("tagNames") List<String> tagNames);
 }
