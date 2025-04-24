@@ -36,7 +36,7 @@ public class BoardService {
     private final MemberRepository memberRepository;
     private final TagService tagService;
     private static final String SESSION_KEY = "LOGGED_IN_MEMBER";
-    private static final String UPLOAD_DIR = "src/main/resources/static/uploads/";
+    private static final String UPLOAD_DIR = "./src/main/resources/static/uploads/";
 
     /**
      * 모든 게시물 조회

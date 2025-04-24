@@ -4,6 +4,7 @@ import com.milestone.entity.Member;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -20,4 +21,7 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
 
     // 닉네임 존재 여부 확인
     boolean existsByMemberNickname(String memberNickname);
+
+    // 추천 사용자 조회 (팔로우하지 않은 사용자들 중 10명)
+    List<Member> findTop10ByMemberNoNotInAndMemberNoNot(List<Long> followingIds, Long memberNo);
 }
