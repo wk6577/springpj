@@ -181,4 +181,16 @@ public class NotificationService {
         unreadNotifications.forEach(notification -> notification.setNoticeRead(true));
         noticeRepository.saveAll(unreadNotifications);
     }
+
+    /**
+     * 읽지 않은 알림 개수 조회
+     */
+    @Transactional(readOnly = true)
+    public long getUnreadNotificationCount(Long memberNo) {
+        if (memberNo == null) {
+            throw new IllegalArgumentException("회원 ID가 유효하지 않습니다.");
+        }
+
+        return noticeRepository.countByMemberMemberNoAndNoticeReadFalse(memberNo);
+    }
 }
