@@ -92,6 +92,11 @@ public class MemberService {
             Member member = memberRepository.findByMemberEmail(request.getMemberEmail())
                     .orElseThrow(() -> new IllegalArgumentException("이메일 또는 비밀번호가 일치하지 않습니다."));
 
+            // 회원 상태 확인
+            if ("inactive".equals(member.getMemberStatus())) {
+                throw new IllegalArgumentException("탈퇴한 회원입니다.");
+            }
+
             // 비밀번호 검증
             if (!PasswordUtils.verifyPassword(request.getMemberPassword(), member.getMemberPassword())) {
                 logger.warn("비밀번호 불일치: {}", request.getMemberEmail());
@@ -175,6 +180,19 @@ public class MemberService {
             member.setMemberIntroduce(request.getMemberIntroduce());
         }
 
+        // 계정 공개 범위 변경
+        if (request.getMemberVisible() != null && !request.getMemberVisible().isEmpty()) {
+            member.setMemberVisible(request.getMemberVisible());
+        }
+
+        // 알림 설정 변경
+        if (request.getNotificationSettings() != null) {
+            // 알림 설정을 저장하는 추가 로직
+            // 예: 별도의 알림 설정 테이블이 있다면 여기서 처리
+            logger.info("알림 설정 업데이트: {}", request.getNotificationSettings());
+            // 현재는 프론트엔드에서만 관리하는 것으로 가정
+        }
+
         // 프로필 이미지 초기화 요청 확인
         boolean resetToDefault = request.getResetProfileImage() != null &&
                 request.getResetProfileImage().equals("true");
@@ -215,6 +233,29 @@ public class MemberService {
         logger.info("회원 정보 업데이트 성공: ID={}", updatedMember.getMemberNo());
 
         return MemberResponse.fromEntity(updatedMember);
+    }
+
+    /**
+     * 회원 탈퇴
+     */
+    @Transactional
+    public void withdrawMember(HttpSession session) {
+        Long memberNo = (Long) session.getAttribute(SESSION_KEY);
+        if (memberNo == null) {
+            throw new IllegalArgumentException("로그인이 필요합니다.");
+        }
+
+        Member member = memberRepository.findById(memberNo)
+                .orElseThrow(() -> new IllegalArgumentException("회원을 찾을 수 없습니다."));
+
+        // 회원 상태를 "inactive"로 변경 (실제 삭제 대신 논리적 삭제)
+        member.setMemberStatus("inactive");
+        memberRepository.save(member);
+
+        // 세션 무효화
+        session.invalidate();
+
+        logger.info("회원 탈퇴 완료: ID={}", memberNo);
     }
 
     /**

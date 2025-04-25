@@ -120,6 +120,8 @@ public class MemberController {
             @RequestParam(value = "memberNickname", required = false) String memberNickname,
             @RequestParam(value = "memberIntroduce", required = false) String memberIntroduce,
             @RequestParam(value = "resetProfileImage", required = false) String resetProfileImage,
+            @RequestParam(value = "memberVisible", required = false) String memberVisible,
+            @RequestParam(value = "notificationSettings", required = false) String notificationSettings,
             HttpSession session) {
 
         try {
@@ -130,6 +132,8 @@ public class MemberController {
                     .memberNickname(memberNickname)
                     .memberIntroduce(memberIntroduce)
                     .resetProfileImage(resetProfileImage)
+                    .memberVisible(memberVisible)
+                    .notificationSettings(notificationSettings)
                     .build();
 
             MemberResponse response = memberService.updateMember(request, profileImage, session);
@@ -147,6 +151,34 @@ public class MemberController {
 
             Map<String, String> errorResponse = new HashMap<>();
             errorResponse.put("error", "회원 정보 수정 중 오류가 발생했습니다.");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
+    /**
+     * 회원 탈퇴 API
+     */
+    @DeleteMapping("/withdraw")
+    public ResponseEntity<Object> withdrawMember(HttpSession session) {
+        try {
+            logger.info("회원 탈퇴 요청");
+            memberService.withdrawMember(session);
+
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "회원 탈퇴가 완료되었습니다.");
+
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            logger.warn("회원 탈퇴 실패 - 잘못된 요청: {}", e.getMessage());
+
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+        } catch (Exception e) {
+            logger.error("회원 탈퇴 실패 - 서버 오류: {}", e.getMessage(), e);
+
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", "회원 탈퇴 처리 중 오류가 발생했습니다.");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
     }

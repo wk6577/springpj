@@ -14,4 +14,6 @@ public class MemberUpdateRequest {
     private String memberNickname;
     private String memberIntroduce;
     private String resetProfileImage; // 프로필 이미지 초기화 여부
+    private String memberVisible; // 계정 공개 범위 설정
+    private String notificationSettings; // 알림 설정 JSON 문자열
 }
