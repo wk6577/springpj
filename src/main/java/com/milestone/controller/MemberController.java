@@ -119,6 +119,7 @@ public class MemberController {
             @RequestParam(value = "memberName", required = false) String memberName,
             @RequestParam(value = "memberNickname", required = false) String memberNickname,
             @RequestParam(value = "memberIntroduce", required = false) String memberIntroduce,
+            @RequestParam(value = "resetProfileImage", required = false) String resetProfileImage,
             HttpSession session) {
 
         try {
@@ -128,6 +129,7 @@ public class MemberController {
                     .memberName(memberName)
                     .memberNickname(memberNickname)
                     .memberIntroduce(memberIntroduce)
+                    .resetProfileImage(resetProfileImage)
                     .build();
 
             MemberResponse response = memberService.updateMember(request, profileImage, session);

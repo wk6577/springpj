@@ -13,4 +13,5 @@ public class MemberUpdateRequest {
     private String memberName;
     private String memberNickname;
     private String memberIntroduce;
+    private String resetProfileImage; // 프로필 이미지 초기화 여부
 }

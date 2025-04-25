@@ -31,7 +31,7 @@ public class MemberService {
     private final MemberRepository memberRepository;
     private static final String SESSION_KEY = "LOGGED_IN_MEMBER";
     private static final String UPLOAD_DIR = "./src/main/resources/static/uploads/";
-    private static final String DEFAULT_PROFILE_IMAGE = "/default-profile.png";
+    private static final String DEFAULT_PROFILE_IMAGE = "/icon/profileimage.png";
 
     /**
      * 회원 가입
@@ -175,8 +175,17 @@ public class MemberService {
             member.setMemberIntroduce(request.getMemberIntroduce());
         }
 
-        // 프로필 이미지 처리
-        if (profileImage != null && !profileImage.isEmpty()) {
+        // 프로필 이미지 초기화 요청 확인
+        boolean resetToDefault = request.getResetProfileImage() != null &&
+                request.getResetProfileImage().equals("true");
+
+        if (resetToDefault) {
+            // 기본 이미지로 설정
+            member.setMemberPhoto(DEFAULT_PROFILE_IMAGE);
+            logger.info("프로필 이미지 초기화: {}", member.getMemberNo());
+        }
+        // 새 프로필 이미지 업로드 요청 확인
+        else if (profileImage != null && !profileImage.isEmpty()) {
             try {
                 // 이미지 저장 경로 생성
                 Path targetPath = Paths.get(UPLOAD_DIR);
