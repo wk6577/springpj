@@ -3,6 +3,7 @@ package com.milestone.service;
 import com.milestone.dto.MemberJoinRequest;
 import com.milestone.dto.MemberLoginRequest;
 import com.milestone.dto.MemberResponse;
+import com.milestone.dto.MemberUpdateRequest;
 import com.milestone.entity.Member;
 import com.milestone.repository.MemberRepository;
 import com.milestone.util.PasswordUtils;
@@ -11,10 +12,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import jakarta.servlet.http.HttpSession;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -23,6 +30,8 @@ public class MemberService {
     private static final Logger logger = LoggerFactory.getLogger(MemberService.class);
     private final MemberRepository memberRepository;
     private static final String SESSION_KEY = "LOGGED_IN_MEMBER";
+    private static final String UPLOAD_DIR = "./src/main/resources/static/uploads/";
+    private static final String DEFAULT_PROFILE_IMAGE = "/default-profile.png";
 
     /**
      * 회원 가입
@@ -54,7 +63,7 @@ public class MemberService {
                     .memberEmail(request.getMemberEmail())
                     .memberPassword(hashedPassword)
                     .memberPhone(request.getMemberPhone())
-                    .memberPhoto(request.getMemberPhoto())
+                    .memberPhoto(DEFAULT_PROFILE_IMAGE)  // 기본 프로필 이미지 설정
                     .memberIntroduce(request.getMemberIntroduce())
                     .memberVisible(request.getMemberVisible())
                     .memberStatus("active")
@@ -133,5 +142,80 @@ public class MemberService {
 
         return memberRepository.findById(memberNo)
                 .map(MemberResponse::fromEntity);
+    }
+
+    /**
+     * 회원 정보 수정
+     */
+    @Transactional
+    public MemberResponse updateMember(MemberUpdateRequest request, MultipartFile profileImage, HttpSession session) {
+        Long memberNo = (Long) session.getAttribute(SESSION_KEY);
+        if (memberNo == null) {
+            throw new IllegalArgumentException("로그인이 필요합니다.");
+        }
+
+        Member member = memberRepository.findById(memberNo)
+                .orElseThrow(() -> new IllegalArgumentException("회원을 찾을 수 없습니다."));
+
+        // 닉네임 변경 시 중복 체크
+        if (request.getMemberNickname() != null && !request.getMemberNickname().equals(member.getMemberNickname())) {
+            if (memberRepository.existsByMemberNickname(request.getMemberNickname())) {
+                throw new IllegalArgumentException("이미 사용 중인 닉네임입니다.");
+            }
+            member.setMemberNickname(request.getMemberNickname());
+        }
+
+        // 이름 변경
+        if (request.getMemberName() != null && !request.getMemberName().isEmpty()) {
+            member.setMemberName(request.getMemberName());
+        }
+
+        // 자기소개 변경
+        if (request.getMemberIntroduce() != null) {
+            member.setMemberIntroduce(request.getMemberIntroduce());
+        }
+
+        // 프로필 이미지 처리
+        if (profileImage != null && !profileImage.isEmpty()) {
+            try {
+                // 이미지 저장 경로 생성
+                Path targetPath = Paths.get(UPLOAD_DIR);
+                if (!Files.exists(targetPath)) {
+                    Files.createDirectories(targetPath);
+                }
+
+                // 파일명 생성
+                String fileName = "profile_" + UUID.randomUUID().toString() + "_" + profileImage.getOriginalFilename();
+                Path filePath = targetPath.resolve(fileName);
+
+                // 파일 저장
+                Files.copy(profileImage.getInputStream(), filePath);
+
+                // 경로 저장
+                member.setMemberPhoto("/uploads/" + fileName);
+
+                logger.info("프로필 이미지 업데이트: {}", fileName);
+            } catch (IOException e) {
+                logger.error("프로필 이미지 저장 중 오류: {}", e.getMessage(), e);
+                throw new RuntimeException("프로필 이미지 저장 중 오류가 발생했습니다.", e);
+            }
+        }
+
+        // 회원 정보 업데이트
+        Member updatedMember = memberRepository.save(member);
+        logger.info("회원 정보 업데이트 성공: ID={}", updatedMember.getMemberNo());
+
+        return MemberResponse.fromEntity(updatedMember);
+    }
+
+    /**
+     * 닉네임으로 회원 정보 조회
+     */
+    @Transactional(readOnly = true)
+    public MemberResponse getMemberByNickname(String nickname) {
+        Member member = memberRepository.findByMemberNickname(nickname)
+                .orElseThrow(() -> new IllegalArgumentException("해당 닉네임의 회원을 찾을 수 없습니다."));
+
+        return MemberResponse.fromEntity(member);
     }
 }

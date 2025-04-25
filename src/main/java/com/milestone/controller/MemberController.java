@@ -3,6 +3,7 @@ package com.milestone.controller;
 import com.milestone.dto.MemberJoinRequest;
 import com.milestone.dto.MemberLoginRequest;
 import com.milestone.dto.MemberResponse;
+import com.milestone.dto.MemberUpdateRequest;
 import com.milestone.service.MemberService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -10,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
@@ -109,6 +111,45 @@ public class MemberController {
     }
 
     /**
+     * 회원 정보 수정 API
+     */
+    @PutMapping("/update")
+    public ResponseEntity<Object> updateMember(
+            @RequestParam(value = "profileImage", required = false) MultipartFile profileImage,
+            @RequestParam(value = "memberName", required = false) String memberName,
+            @RequestParam(value = "memberNickname", required = false) String memberNickname,
+            @RequestParam(value = "memberIntroduce", required = false) String memberIntroduce,
+            HttpSession session) {
+
+        try {
+            logger.info("회원 정보 수정 요청");
+
+            MemberUpdateRequest request = MemberUpdateRequest.builder()
+                    .memberName(memberName)
+                    .memberNickname(memberNickname)
+                    .memberIntroduce(memberIntroduce)
+                    .build();
+
+            MemberResponse response = memberService.updateMember(request, profileImage, session);
+            logger.info("회원 정보 수정 성공 - ID: {}", response.getMemberNo());
+
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            logger.warn("회원 정보 수정 실패 - 잘못된 요청: {}", e.getMessage());
+
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+        } catch (Exception e) {
+            logger.error("회원 정보 수정 실패 - 서버 오류: {}", e.getMessage(), e);
+
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", "회원 정보 수정 중 오류가 발생했습니다.");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
+    /**
      * 서버 상태 확인 API (디버깅용)
      */
     @GetMapping("/health")
@@ -117,5 +158,29 @@ public class MemberController {
         response.put("status", "ok");
         response.put("message", "서버가 정상적으로 동작 중입니다.");
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * 닉네임으로 회원 정보 조회 API
+     */
+    @GetMapping("/profile/{nickname}")
+    public ResponseEntity<Object> getMemberByNickname(@PathVariable String nickname) {
+        try {
+            logger.info("닉네임으로 회원 정보 조회 요청 - 닉네임: {}", nickname);
+            MemberResponse response = memberService.getMemberByNickname(nickname);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            logger.warn("회원 정보 조회 실패 - 잘못된 요청: {}", e.getMessage());
+
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+        } catch (Exception e) {
+            logger.error("회원 정보 조회 실패 - 서버 오류: {}", e.getMessage(), e);
+
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", "회원 정보 조회 중 오류가 발생했습니다.");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
     }
 }
