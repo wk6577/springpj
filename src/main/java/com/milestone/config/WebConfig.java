@@ -40,11 +40,19 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        // 파일 시스템의 uploads 디렉토리를 /uploads URL로 매핑
+        String uploadPath = System.getProperty("user.dir") + "/src/main/resources/static/uploads/";
         registry.addResourceHandler("/uploads/**")
-                .addResourceLocations("classpath:/static/uploads/");
+                .addResourceLocations("file:" + uploadPath)
+                .setCachePeriod(3600)
+                .resourceChain(true);
 
+        // 정적 리소스 매핑
         registry.addResourceHandler("/static/**")
                 .addResourceLocations("classpath:/static/");
+
+        registry.addResourceHandler("/icon/**")
+                .addResourceLocations("classpath:/static/icon/");
 
         registry.addResourceHandler("swagger-ui.html")
                 .addResourceLocations("classpath:/META-INF/resources/");

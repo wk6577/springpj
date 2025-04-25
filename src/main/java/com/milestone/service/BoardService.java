@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -191,6 +192,7 @@ public class BoardService {
 
         // 게시물 저장
         Board savedBoard = boardRepository.save(board);
+        logger.info("게시물 저장 성공 - ID: {}", savedBoard.getBoardNo());
 
         // 태그 처리
         if (request.getTags() != null && !request.getTags().isEmpty()) {
@@ -198,6 +200,7 @@ public class BoardService {
                 // JSON 문자열에서 태그 배열 추출
                 List<String> tagList = tagService.parseTagsFromJson(request.getTags());
                 tagService.saveBoardTags(savedBoard, tagList);
+                logger.info("태그 저장 성공: {}", tagList);
             } catch (Exception e) {
                 logger.error("태그 처리 중 오류 발생: {}", e.getMessage(), e);
             }
@@ -207,28 +210,43 @@ public class BoardService {
         String imageUrl = null;
         if (image != null && !image.isEmpty()) {
             try {
-                // 파일 저장
-                String fileName = UUID.randomUUID().toString() + "_" + image.getOriginalFilename();
-                Path targetPath = Paths.get(UPLOAD_DIR);
-
-                // 디렉토리가 없으면 생성
-                if (!Files.exists(targetPath)) {
-                    Files.createDirectories(targetPath);
+                // 업로드 디렉토리 확인 및 생성
+                Path uploadPath = Paths.get(UPLOAD_DIR);
+                if (!Files.exists(uploadPath)) {
+                    Files.createDirectories(uploadPath);
+                    logger.info("업로드 디렉토리 생성: {}", uploadPath);
                 }
 
-                Path filePath = targetPath.resolve(fileName);
-                Files.copy(image.getInputStream(), filePath);
+                // 고유한 파일명 생성
+                String originalFilename = image.getOriginalFilename();
+                String fileExtension = "";
+                if (originalFilename != null && originalFilename.contains(".")) {
+                    fileExtension = originalFilename.substring(originalFilename.lastIndexOf("."));
+                }
+                String fileName = "board_" + savedBoard.getBoardNo() + "_" + UUID.randomUUID().toString() + fileExtension;
+
+                // 파일 저장 경로
+                Path filePath = uploadPath.resolve(fileName);
+
+                // 파일 저장
+                Files.copy(image.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+                logger.info("이미지 파일 저장 경로: {}", filePath);
+
+                // 상대 경로 (웹에서 접근 가능한 경로)
+                String relativePath = "/uploads/" + fileName;
 
                 // 게시물 이미지 엔티티 생성 및 저장
                 BoardImage boardImage = BoardImage.builder()
                         .board(savedBoard)
                         .boardImageName(fileName)
-                        .boardImagePath("/uploads/" + fileName)
+                        .boardImagePath(relativePath)
                         .boardImageOrder(0)
                         .build();
 
                 BoardImage savedImage = boardImageRepository.save(boardImage);
                 imageUrl = savedImage.getBoardImagePath();
+
+                logger.info("이미지 메타데이터 저장 성공: {}", imageUrl);
             } catch (IOException e) {
                 logger.error("이미지 저장 중 오류 발생: {}", e.getMessage(), e);
                 throw new RuntimeException("이미지 저장 중 오류가 발생했습니다.", e);

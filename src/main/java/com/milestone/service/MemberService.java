@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
@@ -205,20 +206,25 @@ public class MemberService {
         // 새 프로필 이미지 업로드 요청 확인
         else if (profileImage != null && !profileImage.isEmpty()) {
             try {
-                // 이미지 저장 경로 생성
-                Path targetPath = Paths.get(UPLOAD_DIR);
+                // 이미지 저장 경로 생성 - 절대 경로 사용
+                String uploadDir = System.getProperty("user.dir") + "/src/main/resources/static/uploads/";
+                Path targetPath = Paths.get(uploadDir);
                 if (!Files.exists(targetPath)) {
                     Files.createDirectories(targetPath);
                 }
 
+                // 파일 확장자 추출
+                String originalFilename = profileImage.getOriginalFilename();
+                String fileExtension = originalFilename.substring(originalFilename.lastIndexOf("."));
+
                 // 파일명 생성
-                String fileName = "profile_" + UUID.randomUUID().toString() + "_" + profileImage.getOriginalFilename();
+                String fileName = "profile_" + UUID.randomUUID().toString() + fileExtension;
                 Path filePath = targetPath.resolve(fileName);
 
-                // 파일 저장
-                Files.copy(profileImage.getInputStream(), filePath);
+                // 파일 저장 - 기존 파일이 있으면 덮어쓰기
+                Files.copy(profileImage.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
-                // 경로 저장
+                // 경로 저장 - 웹에서 접근 가능한 URL 경로
                 member.setMemberPhoto("/uploads/" + fileName);
 
                 logger.info("프로필 이미지 업데이트: {}", fileName);
