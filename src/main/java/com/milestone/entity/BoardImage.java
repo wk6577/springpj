@@ -29,8 +29,18 @@ public class BoardImage {
     @Column(name = "board_image_name", nullable = false, length = 1000)
     private String boardImageName;
 
-    @Column(name = "board_image_path", nullable = false, length = 1000)
+    // 이미지 경로 (선택적으로 유지)
+    @Column(name = "board_image_path", length = 1000)
     private String boardImagePath;
+
+    // 이미지 바이너리 데이터
+    @Lob
+    @Column(name = "board_image_data", nullable = false, columnDefinition = "LONGBLOB")
+    private byte[] boardImageData;
+
+    // 이미지 MIME 타입
+    @Column(name = "board_image_type", nullable = false, length = 100)
+    private String boardImageType;
 
     @Column(name = "board_image_order", nullable = false)
     private Integer boardImageOrder;

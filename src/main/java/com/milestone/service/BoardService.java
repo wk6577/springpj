@@ -20,10 +20,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -43,7 +39,6 @@ public class BoardService {
     private final ReplyRepository replyRepository;
     private final TagService tagService;
     private static final String SESSION_KEY = "LOGGED_IN_MEMBER";
-    private static final String UPLOAD_DIR = "./src/main/resources/static/uploads/";
 
     /**
      * 모든 게시물 조회
@@ -166,7 +161,7 @@ public class BoardService {
     }
 
     /**
-     * 게시물 작성
+     * 게시물 작성 - 이미지를 DB에 저장하는 방식으로 변경
      */
     @Transactional
     public BoardResponse createBoard(BoardRequest request, MultipartFile image, HttpSession session) {
@@ -206,18 +201,11 @@ public class BoardService {
             }
         }
 
-        // 이미지 처리
+        // 이미지 처리 - MySQL에 직접 저장하는 방식으로 변경
         String imageUrl = null;
         if (image != null && !image.isEmpty()) {
             try {
-                // 업로드 디렉토리 확인 및 생성
-                Path uploadPath = Paths.get(UPLOAD_DIR);
-                if (!Files.exists(uploadPath)) {
-                    Files.createDirectories(uploadPath);
-                    logger.info("업로드 디렉토리 생성: {}", uploadPath);
-                }
-
-                // 고유한 파일명 생성
+                // 이미지 파일명 생성
                 String originalFilename = image.getOriginalFilename();
                 String fileExtension = "";
                 if (originalFilename != null && originalFilename.contains(".")) {
@@ -225,30 +213,29 @@ public class BoardService {
                 }
                 String fileName = "board_" + savedBoard.getBoardNo() + "_" + UUID.randomUUID().toString() + fileExtension;
 
-                // 파일 저장 경로
-                Path filePath = uploadPath.resolve(fileName);
+                // 이미지 바이너리 데이터 및 MIME 타입 얻기
+                byte[] imageData = image.getBytes();
+                String contentType = image.getContentType();
 
-                // 파일 저장
-                Files.copy(image.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
-                logger.info("이미지 파일 저장 경로: {}", filePath);
-
-                // 상대 경로 (웹에서 접근 가능한 경로)
-                String relativePath = "/uploads/" + fileName;
+                // API 경로 생성 (이미지 접근 URL)
+                String apiPath = "/api/images/" + savedBoard.getBoardNo();
 
                 // 게시물 이미지 엔티티 생성 및 저장
                 BoardImage boardImage = BoardImage.builder()
                         .board(savedBoard)
                         .boardImageName(fileName)
-                        .boardImagePath(relativePath)
+                        .boardImagePath(apiPath) // API 접근 경로로 설정
+                        .boardImageData(imageData) // 바이너리 데이터 저장
+                        .boardImageType(contentType != null ? contentType : "image/jpeg") // MIME 타입 저장
                         .boardImageOrder(0)
                         .build();
 
                 BoardImage savedImage = boardImageRepository.save(boardImage);
                 imageUrl = savedImage.getBoardImagePath();
 
-                logger.info("이미지 메타데이터 저장 성공: {}", imageUrl);
+                logger.info("이미지 저장 성공: {}", fileName);
             } catch (IOException e) {
-                logger.error("이미지 저장 중 오류 발생: {}", e.getMessage(), e);
+                logger.error("이미지 처리 중 오류 발생: {}", e.getMessage(), e);
                 throw new RuntimeException("이미지 저장 중 오류가 발생했습니다.", e);
             }
         }
@@ -342,6 +329,24 @@ public class BoardService {
 
         // 게시물 삭제 (외래 키 제약조건에 따라 관련 이미지, 좋아요, 스크랩 등이 자동 삭제됨)
         boardRepository.delete(board);
+    }
+
+    /**
+     * 이미지 ID로 이미지 정보 조회
+     */
+    @Transactional(readOnly = true)
+    public BoardImage getBoardImageInfo(Long imageId) {
+        return boardImageRepository.findById(imageId)
+                .orElseThrow(() -> new IllegalArgumentException("이미지를 찾을 수 없습니다: " + imageId));
+    }
+
+    /**
+     * 파일명으로 이미지 정보 조회
+     */
+    @Transactional(readOnly = true)
+    public BoardImage getBoardImageByFilename(String filename) {
+        return boardImageRepository.findByBoardImageName(filename)
+                .orElseThrow(() -> new IllegalArgumentException("이미지를 찾을 수 없습니다: " + filename));
     }
 
     /**
