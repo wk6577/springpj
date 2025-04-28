@@ -1,5 +1,6 @@
 package com.milestone.controller;
 
+import com.milestone.service.BoardService;
 import com.milestone.service.TagService;
 import com.milestone.dto.BoardResponse;
 import lombok.RequiredArgsConstructor;
