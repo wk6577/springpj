@@ -81,28 +81,6 @@ public class ImageController {
     }
 
     /**
-     * 이미지 파일명으로 제공하는 API
-     * 기존 URL 형식 지원 (/uploads/ 경로를 사용하던 방식)
-     */
-    @GetMapping("/file/{filename:.+}")
-    public ResponseEntity<byte[]> getImageByFilename(@PathVariable String filename) {
-        try {
-            // 파일명으로 이미지 조회
-            BoardImage image = boardService.getBoardImageByFilename(filename);
-
-            // HTTP 헤더 설정
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.parseMediaType(image.getBoardImageType()));
-            headers.setCacheControl("max-age=86400"); // 하루 동안 캐싱
-
-            return new ResponseEntity<>(image.getBoardImageData(), headers, HttpStatus.OK);
-        } catch (Exception e) {
-            logger.error("이미지 파일명으로 조회 중 오류 발생: {}", e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
-
-    /**
      * 회원 프로필 이미지 제공 API
      * 프론트엔드에서 /api/images/profile/{memberNo}로 접근
      */
