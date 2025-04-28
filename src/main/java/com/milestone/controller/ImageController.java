@@ -106,8 +106,10 @@ public class ImageController {
             // Content-Type 설정 (이미지 MIME 타입)
             headers.setContentType(MediaType.parseMediaType(member.getMemberPhotoType()));
 
-            // 캐시 제어 헤더 설정
-            headers.setCacheControl("max-age=3600"); // 1시간 동안 캐싱 (프로필은 더 자주 변경될 수 있으므로)
+            // 캐시 제어 헤더 설정 - 프로필 이미지는 변경이 자주 일어날 수 있으므로 캐시 제한
+            headers.setCacheControl("no-cache, no-store, must-revalidate"); // 캐시 사용 안함
+            headers.setPragma("no-cache");
+            headers.setExpires(0); // 즉시 만료
 
             // 이미지 바이너리 데이터와 함께 응답 반환
             return new ResponseEntity<>(member.getMemberPhotoData(), headers, HttpStatus.OK);
