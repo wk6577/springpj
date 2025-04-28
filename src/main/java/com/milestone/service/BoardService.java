@@ -161,6 +161,18 @@ public class BoardService {
     }
 
     /**
+     * 게시물 ID로 첫 번째 이미지 가져오기
+     */
+    @Transactional(readOnly = true)
+    public BoardImage getBoardFirstImage(Long boardNo) {
+        List<BoardImage> images = boardImageRepository.findByBoardBoardNoOrderByBoardImageOrderAsc(boardNo);
+        if (images.isEmpty()) {
+            return null;
+        }
+        return images.get(0);
+    }
+
+    /**
      * 게시물 작성 - 이미지를 DB에 저장하는 방식으로 변경
      */
     @Transactional
