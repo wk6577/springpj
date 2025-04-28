@@ -10,6 +10,8 @@ import com.milestone.util.PasswordUtils;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -19,10 +21,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.util.Optional;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -31,8 +31,7 @@ public class MemberService {
     private static final Logger logger = LoggerFactory.getLogger(MemberService.class);
     private final MemberRepository memberRepository;
     private static final String SESSION_KEY = "LOGGED_IN_MEMBER";
-    private static final String UPLOAD_DIR = "./src/main/resources/static/uploads/";
-    private static final String DEFAULT_PROFILE_IMAGE = "/icon/profileimage.png";
+    private static final String DEFAULT_PROFILE_IMAGE_PATH = "/icon/profileimage.png";
 
     /**
      * 회원 가입
@@ -64,7 +63,7 @@ public class MemberService {
                     .memberEmail(request.getMemberEmail())
                     .memberPassword(hashedPassword)
                     .memberPhone(request.getMemberPhone())
-                    .memberPhoto(DEFAULT_PROFILE_IMAGE)  // 기본 프로필 이미지 설정
+                    .memberPhoto(DEFAULT_PROFILE_IMAGE_PATH)  // 기본 프로필 이미지 설정
                     .memberIntroduce(request.getMemberIntroduce())
                     .memberVisible(request.getMemberVisible())
                     .memberStatus("active")
@@ -151,7 +150,7 @@ public class MemberService {
     }
 
     /**
-     * 회원 정보 수정
+     * 회원 정보 수정 - 이미지를 바이너리 데이터로 저장하도록 변경
      */
     @Transactional
     public MemberResponse updateMember(MemberUpdateRequest request, MultipartFile profileImage, HttpSession session) {
@@ -200,36 +199,30 @@ public class MemberService {
 
         if (resetToDefault) {
             // 기본 이미지로 설정
-            member.setMemberPhoto(DEFAULT_PROFILE_IMAGE);
+            member.setMemberPhoto(DEFAULT_PROFILE_IMAGE_PATH);
+            // 이미지 데이터가 있다면 null로 설정
+            member.setMemberPhotoData(null);
+            member.setMemberPhotoType(null);
             logger.info("프로필 이미지 초기화: {}", member.getMemberNo());
         }
         // 새 프로필 이미지 업로드 요청 확인
         else if (profileImage != null && !profileImage.isEmpty()) {
             try {
-                // 이미지 저장 경로 생성 - 절대 경로 사용
-                String uploadDir = System.getProperty("user.dir") + "/src/main/resources/static/uploads/";
-                Path targetPath = Paths.get(uploadDir);
-                if (!Files.exists(targetPath)) {
-                    Files.createDirectories(targetPath);
-                }
+                // 이미지 바이너리 데이터 및 MIME 타입 얻기
+                byte[] imageData = profileImage.getBytes();
+                String contentType = profileImage.getContentType();
 
-                // 파일 확장자 추출
-                String originalFilename = profileImage.getOriginalFilename();
-                String fileExtension = originalFilename.substring(originalFilename.lastIndexOf("."));
+                // API 경로 생성 (이미지 접근 URL)
+                String apiPath = "/api/images/profile/" + member.getMemberNo();
 
-                // 파일명 생성
-                String fileName = "profile_" + UUID.randomUUID().toString() + fileExtension;
-                Path filePath = targetPath.resolve(fileName);
+                // 이미지 데이터 및 MIME 타입 저장
+                member.setMemberPhotoData(imageData);
+                member.setMemberPhotoType(contentType != null ? contentType : "image/jpeg");
+                member.setMemberPhoto(apiPath); // API 접근 경로로 설정
 
-                // 파일 저장 - 기존 파일이 있으면 덮어쓰기
-                Files.copy(profileImage.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
-
-                // 경로 저장 - 웹에서 접근 가능한 URL 경로
-                member.setMemberPhoto("/uploads/" + fileName);
-
-                logger.info("프로필 이미지 업데이트: {}", fileName);
+                logger.info("프로필 이미지 업데이트 성공: {}", member.getMemberNo());
             } catch (IOException e) {
-                logger.error("프로필 이미지 저장 중 오류: {}", e.getMessage(), e);
+                logger.error("프로필 이미지 처리 중 오류: {}", e.getMessage(), e);
                 throw new RuntimeException("프로필 이미지 저장 중 오류가 발생했습니다.", e);
             }
         }
@@ -273,5 +266,28 @@ public class MemberService {
                 .orElseThrow(() -> new IllegalArgumentException("해당 닉네임의 회원을 찾을 수 없습니다."));
 
         return MemberResponse.fromEntity(member);
+    }
+
+    /**
+     * 회원 프로필 이미지 조회
+     */
+    @Transactional(readOnly = true)
+    public Member getMemberProfileImage(Long memberNo) {
+        return memberRepository.findById(memberNo)
+                .orElseThrow(() -> new IllegalArgumentException("회원을 찾을 수 없습니다: " + memberNo));
+    }
+
+    /**
+     * 기본 프로필 이미지 데이터 로드
+     */
+    public byte[] getDefaultProfileImageData() {
+        try {
+            // 클래스패스에서 기본 이미지 로드
+            Resource resource = new ClassPathResource("/static/icon/profileimage.png");
+            return Files.readAllBytes(resource.getFile().toPath());
+        } catch (IOException e) {
+            logger.error("기본 프로필 이미지 로드 중 오류: {}", e.getMessage(), e);
+            return new byte[0]; // 빈 바이트 배열 반환
+        }
     }
 }

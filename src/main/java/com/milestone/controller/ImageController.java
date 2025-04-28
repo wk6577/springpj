@@ -1,7 +1,9 @@
 package com.milestone.controller;
 
 import com.milestone.entity.BoardImage;
+import com.milestone.entity.Member;
 import com.milestone.service.BoardService;
+import com.milestone.service.MemberService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,6 +20,7 @@ public class ImageController {
 
     private static final Logger logger = LoggerFactory.getLogger(ImageController.class);
     private final BoardService boardService;
+    private final MemberService memberService;
 
     /**
      * 게시물 ID로 이미지 데이터 제공 API
@@ -95,6 +98,46 @@ public class ImageController {
             return new ResponseEntity<>(image.getBoardImageData(), headers, HttpStatus.OK);
         } catch (Exception e) {
             logger.error("이미지 파일명으로 조회 중 오류 발생: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
+     * 회원 프로필 이미지 제공 API
+     * 프론트엔드에서 /api/images/profile/{memberNo}로 접근
+     */
+    @GetMapping("/profile/{memberNo}")
+    public ResponseEntity<byte[]> getProfileImage(@PathVariable Long memberNo) {
+        try {
+            // 회원 ID로 회원 정보 조회
+            Member member = memberService.getMemberProfileImage(memberNo);
+
+            // HTTP 헤더 설정
+            HttpHeaders headers = new HttpHeaders();
+
+            // 이미지 데이터가 없거나 기본 이미지인 경우
+            if (member.getMemberPhotoData() == null || member.getMemberPhotoType() == null ||
+                    "/icon/profileimage.png".equals(member.getMemberPhoto())) {
+                // 기본 이미지 데이터 반환
+                byte[] defaultImageData = memberService.getDefaultProfileImageData();
+                headers.setContentType(MediaType.IMAGE_PNG);
+                headers.setCacheControl("max-age=86400"); // 하루 동안 캐싱
+                return new ResponseEntity<>(defaultImageData, headers, HttpStatus.OK);
+            }
+
+            // Content-Type 설정 (이미지 MIME 타입)
+            headers.setContentType(MediaType.parseMediaType(member.getMemberPhotoType()));
+
+            // 캐시 제어 헤더 설정
+            headers.setCacheControl("max-age=3600"); // 1시간 동안 캐싱 (프로필은 더 자주 변경될 수 있으므로)
+
+            // 이미지 바이너리 데이터와 함께 응답 반환
+            return new ResponseEntity<>(member.getMemberPhotoData(), headers, HttpStatus.OK);
+        } catch (IllegalArgumentException e) {
+            logger.warn("프로필 이미지 조회 실패: {}", e.getMessage());
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            logger.error("프로필 이미지 조회 중 오류 발생: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }

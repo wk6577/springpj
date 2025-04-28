@@ -40,6 +40,15 @@ public class Member {
     @Column(name = "member_photo", length = 1000)
     private String memberPhoto;
 
+    // 이미지 바이너리 데이터 추가
+    @Lob
+    @Column(name = "member_photo_data", columnDefinition = "LONGBLOB")
+    private byte[] memberPhotoData;
+
+    // 이미지 MIME 타입 추가
+    @Column(name = "member_photo_type", length = 100)
+    private String memberPhotoType;
+
     @Column(name = "member_introduce", length = 500)
     private String memberIntroduce;
 
