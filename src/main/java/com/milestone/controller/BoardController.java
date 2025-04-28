@@ -2,7 +2,6 @@ package com.milestone.controller;
 
 import com.milestone.dto.BoardRequest;
 import com.milestone.dto.BoardResponse;
-import com.milestone.service.BoardService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
