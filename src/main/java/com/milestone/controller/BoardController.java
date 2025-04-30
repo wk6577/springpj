@@ -58,43 +58,50 @@ public class BoardController {
     /**
      * 게시물 작성 API
      */
-    @PostMapping
+    @PostMapping(consumes = "multipart/form-data")
     public ResponseEntity<Object> createBoard(
-            @RequestParam(value = "image", required = false) MultipartFile image,
-            @RequestParam("boardContent") String boardContent,
-            @RequestParam("boardType") String boardType,
-            @RequestParam("boardVisible") String boardVisible,
-            @RequestParam(value = "boardTitle", required = false) String boardTitle,
-            @RequestParam(value = "tags", required = false) String tags,
+            @RequestPart("board") @Valid BoardRequest boardRequest,
+            @RequestPart(value = "images", required = false) List<MultipartFile> images,
             HttpSession session) {
 
         try {
-            logger.info("게시물 작성 요청 - 타입: {}, 제목: {}", boardType, boardTitle);
+            logger.info("게시물 작성 요청 - 타입: {}, 제목: {}", boardRequest.getBoardType(), boardRequest.getBoardTitle());
+            logger.debug("게시물 내용: {}", boardRequest.getBoardContent());
+            logger.debug("게시물 공개 범위: {}", boardRequest.getBoardVisible());
+            logger.debug("태그: {}", boardRequest.getTags());
+            
+            if (images != null) {
+                logger.debug("이미지 개수: {}", images.size());
+                for (MultipartFile image : images) {
+                    logger.debug("이미지 정보 - 이름: {}, 크기: {}, 타입: {}", 
+                        image.getOriginalFilename(), 
+                        image.getSize(), 
+                        image.getContentType());
+                }
+            }
 
-            BoardRequest boardRequest = BoardRequest.builder()
-                    .boardContent(boardContent)
-                    .boardType(boardType)
-                    .boardVisible(boardVisible)
-                    .boardTitle(boardTitle)
-                    .tags(tags)
-                    .build();
+            // 이미지 리스트를 DTO에 수동 주입 (RequestPart 분리 방식일 때 필요)
+            boardRequest.setImages(images);
 
-            BoardResponse response = boardService.createBoard(boardRequest, image, session);
+            BoardResponse response = boardService.createBoard(boardRequest, session);
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
 
         } catch (IllegalArgumentException e) {
             logger.warn("게시물 작성 실패 - 잘못된 요청: {}", e.getMessage());
+            logger.debug("상세 에러: ", e);
             Map<String, String> errorResponse = new HashMap<>();
             errorResponse.put("error", e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
 
         } catch (Exception e) {
             logger.error("게시물 작성 실패 - 서버 오류: {}", e.getMessage(), e);
+            logger.debug("상세 에러: ", e);
             Map<String, String> errorResponse = new HashMap<>();
             errorResponse.put("error", "게시물 작성 중 오류가 발생했습니다.");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
     }
+
 
     /**
      * 게시물 수정 API

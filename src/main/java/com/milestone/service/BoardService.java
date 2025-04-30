@@ -176,7 +176,7 @@ public class BoardService {
      * 게시물 작성 - 이미지를 DB에 저장하는 방식으로 변경
      */
     @Transactional
-    public BoardResponse createBoard(BoardRequest request, MultipartFile image, HttpSession session) {
+    public BoardResponse createBoard(BoardRequest request, HttpSession session) {
         Long memberNo = (Long) session.getAttribute(SESSION_KEY);
         if (memberNo == null) {
             throw new IllegalArgumentException("로그인이 필요합니다.");
@@ -214,41 +214,50 @@ public class BoardService {
         }
 
         // 이미지 처리 - MySQL에 직접 저장하는 방식으로 변경
-        String imageUrl = null;
-        if (image != null && !image.isEmpty()) {
-            try {
-                // 이미지 파일명 생성
-                String originalFilename = image.getOriginalFilename();
-                String fileExtension = "";
-                if (originalFilename != null && originalFilename.contains(".")) {
-                    fileExtension = originalFilename.substring(originalFilename.lastIndexOf("."));
+        String firstImageUrl = null;                      // 대표 이미지 URL 변수 선언
+        List<MultipartFile> images = request.getImages(); // 누락된 선언 추가
+
+        if (images != null && !images.isEmpty()) {
+            for (int i = 0; i < images.size(); i++) {
+                MultipartFile image = images.get(i);
+                if (image == null || image.isEmpty()) continue;
+
+                try {
+                    // 파일 이름 및 확장자
+                    String originalFilename = image.getOriginalFilename();
+                    String fileExtension = "";
+                    if (originalFilename != null && originalFilename.contains(".")) {
+                        fileExtension = originalFilename.substring(originalFilename.lastIndexOf("."));
+                    }
+                    String fileName = "board_" + savedBoard.getBoardNo() + "_" + UUID.randomUUID() + fileExtension;
+
+                    // 이미지 바이너리 및 MIME 타입
+                    byte[] imageData = image.getBytes();
+                    String contentType = image.getContentType();
+                    String imagePath = "/api/images/" + fileName;
+
+                    BoardImage boardImage = BoardImage.builder()
+                            .board(savedBoard)
+                            .boardImageName(fileName)
+                            .boardImagePath(imagePath)
+                            .boardImageData(imageData)
+                            .boardImageType(contentType != null ? contentType : "image/jpeg")
+                            .boardImageOrder(i)
+                            .build();
+
+                    boardImageRepository.save(boardImage);
+
+                    // 대표 이미지 하나만 저장 (첫 번째 이미지)
+                    if (i == 0) {
+                        firstImageUrl = imagePath;
+                    }
+
+                    logger.info("이미지 저장 완료: {}", fileName);
+
+                } catch (IOException e) {
+                    logger.error("이미지 처리 실패: {}", e.getMessage(), e);
+                    throw new RuntimeException("이미지 저장 중 오류가 발생했습니다.", e);
                 }
-                String fileName = "board_" + savedBoard.getBoardNo() + "_" + UUID.randomUUID().toString() + fileExtension;
-
-                // 이미지 바이너리 데이터 및 MIME 타입 얻기
-                byte[] imageData = image.getBytes();
-                String contentType = image.getContentType();
-
-                // API 경로 생성 (이미지 접근 URL)
-                String apiPath = "/api/images/" + savedBoard.getBoardNo();
-
-                // 게시물 이미지 엔티티 생성 및 저장
-                BoardImage boardImage = BoardImage.builder()
-                        .board(savedBoard)
-                        .boardImageName(fileName)
-                        .boardImagePath(apiPath) // API 접근 경로로 설정
-                        .boardImageData(imageData) // 바이너리 데이터 저장
-                        .boardImageType(contentType != null ? contentType : "image/jpeg") // MIME 타입 저장
-                        .boardImageOrder(0)
-                        .build();
-
-                BoardImage savedImage = boardImageRepository.save(boardImage);
-                imageUrl = savedImage.getBoardImagePath();
-
-                logger.info("이미지 저장 성공: {}", fileName);
-            } catch (IOException e) {
-                logger.error("이미지 처리 중 오류 발생: {}", e.getMessage(), e);
-                throw new RuntimeException("이미지 저장 중 오류가 발생했습니다.", e);
             }
         }
 
@@ -262,13 +271,13 @@ public class BoardService {
                 .boardType(savedBoard.getBoardType())
                 .boardCategory(savedBoard.getBoardCategory())
                 .boardTitle(savedBoard.getBoardTitle())
+                .boardImage(firstImageUrl)
                 .boardContent(savedBoard.getBoardContent())
                 .boardLike(savedBoard.getBoardLike())
                 .boardScrap(savedBoard.getBoardScrap())
                 .boardReadhit(savedBoard.getBoardReadhit())
                 .boardVisible(savedBoard.getBoardVisible())
                 .boardInputdate(savedBoard.getBoardInputdate())
-                .boardImage(imageUrl)
                 .tags(tagService.getBoardTags(savedBoard.getBoardNo()))
                 .isLiked(false)
                 .isScraped(false)

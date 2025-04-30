@@ -40,8 +40,13 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        // 업로드된 파일을 제공하기 위한 설정
+        registry.addResourceHandler("/uploads/**")
+                .addResourceLocations("file:uploads/")
+                .setCachePeriod(3600)
+                .resourceChain(true);
 
-        // 정적 리소스 매핑
+        // 기존 정적 리소스 매핑
         registry.addResourceHandler("/static/**")
                 .addResourceLocations("classpath:/static/");
 
