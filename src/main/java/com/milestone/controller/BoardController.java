@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -106,14 +107,19 @@ public class BoardController {
     /**
      * 게시물 수정 API
      */
-    @PutMapping("/{boardNo}")
+    @PutMapping(value = "/{boardNo}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Object> updateBoard(
             @PathVariable Long boardNo,
-            @RequestBody @Valid BoardRequest boardRequest,
+            @RequestPart("board") @Valid BoardRequest boardRequest,
+            @RequestPart(value = "images", required = false) List<MultipartFile> images,
             HttpSession session) {
 
         try {
             logger.info("게시물 수정 요청 - ID: {}", boardNo);
+
+            // 이미지 정보 설정
+            boardRequest.setImages(images);
+
             BoardResponse response = boardService.updateBoard(boardNo, boardRequest, session);
             return ResponseEntity.ok(response);
 

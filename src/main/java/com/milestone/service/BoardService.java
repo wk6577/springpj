@@ -324,6 +324,50 @@ public class BoardService {
             }
         }
 
+        // 이미지 처리
+        List<MultipartFile> images = request.getImages();
+        if (images != null && !images.isEmpty()) {
+            try {
+                // 기존 이미지가 있으면 삭제
+                boardImageRepository.deleteByBoardBoardNo(boardNo);
+
+                // 새 이미지 저장
+                for (int i = 0; i < images.size(); i++) {
+                    MultipartFile image = images.get(i);
+                    if (image == null || image.isEmpty()) continue;
+
+                    // 파일 이름 및 확장자
+                    String originalFilename = image.getOriginalFilename();
+                    String fileExtension = "";
+                    if (originalFilename != null && originalFilename.contains(".")) {
+                        fileExtension = originalFilename.substring(originalFilename.lastIndexOf("."));
+                    }
+                    String fileName = "board_" + updatedBoard.getBoardNo() + "_" + UUID.randomUUID() + fileExtension;
+
+                    // 이미지 바이너리 및 MIME 타입
+                    byte[] imageData = image.getBytes();
+                    String contentType = image.getContentType();
+                    String imagePath = "/api/images/" + updatedBoard.getBoardNo();
+
+                    BoardImage boardImage = BoardImage.builder()
+                            .board(updatedBoard)
+                            .boardImageName(fileName)
+                            .boardImagePath(imagePath)
+                            .boardImageData(imageData)
+                            .boardImageType(contentType != null ? contentType : "image/jpeg")
+                            .boardImageOrder(i)
+                            .build();
+
+                    boardImageRepository.save(boardImage);
+
+                    logger.info("이미지 업데이트 완료: {}", fileName);
+                }
+            } catch (IOException e) {
+                logger.error("이미지 처리 실패: {}", e.getMessage(), e);
+                throw new RuntimeException("이미지 저장 중 오류가 발생했습니다.", e);
+            }
+        }
+
         return convertToDto(updatedBoard);
     }
 
