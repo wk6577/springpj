@@ -31,30 +31,37 @@ public class ImageUploadController {
         }
     }
 
+    // ... existing code ...
+
     @PostMapping("/upload")
-    public ResponseEntity<String> uploadEditorImage(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<String> uploadImage(@RequestParam("file") MultipartFile file) {
         if (file.isEmpty()) {
             return ResponseEntity.badRequest().body("파일이 비어 있습니다.");
         }
 
         try {
-            // 파일 이름 처리
+            // 원본 파일명에서 확장자 추출
             String originalFilename = StringUtils.cleanPath(file.getOriginalFilename());
             String extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+            
+            // UUID를 사용하여 고유한 파일명 생성
             String filename = UUID.randomUUID().toString() + extension;
 
-            // 절대 경로 생성
+            // 업로드 경로 설정
             Path uploadPath = Paths.get(UPLOAD_DIR).toAbsolutePath();
-            Path savePath = uploadPath.resolve(filename);
+            Path filePath = uploadPath.resolve(filename);
+
+            // 디렉토리가 없으면 생성
+            if (!Files.exists(uploadPath)) {
+                Files.createDirectories(uploadPath);
+            }
 
             // 파일 저장
-            Files.copy(file.getInputStream(), savePath, StandardCopyOption.REPLACE_EXISTING);
-            System.out.println("File saved at: " + savePath);
+            Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
-            // 반환할 URL 경로 (상대 경로)
+            // 이미지 URL 생성 (상대 경로)
             String imageUrl = "/uploads/" + filename;
-            System.out.println("Image URL: " + imageUrl);
-
+            
             return ResponseEntity.ok(imageUrl);
 
         } catch (IOException e) {
