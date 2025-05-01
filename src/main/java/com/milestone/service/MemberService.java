@@ -262,7 +262,7 @@ public class MemberService {
      */
     @Transactional(readOnly = true)
     public MemberResponse getMemberByNickname(String nickname) {
-        Member member = memberRepository.findByMemberNickname(nickname)
+        Member member = memberRepository.findByMemberNicknameAndMemberStatus(nickname, "active")
                 .orElseThrow(() -> new IllegalArgumentException("해당 닉네임의 회원을 찾을 수 없습니다."));
 
         return MemberResponse.fromEntity(member);

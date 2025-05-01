@@ -427,11 +427,24 @@ public class BoardService {
         // 댓글 수 조회
         long replyCount = replyRepository.countByBoardBoardNoAndReplyStatus(board.getBoardNo(), "active");
 
+        // 작성자 정보 처리 - 탈퇴한 회원인 경우 익명 처리
+        String authorName = "탈퇴한 회원";
+        String authorNickname = "탈퇴한 회원";
+        String authorPhoto = "/icon/profileimage.png";
+
+        // 회원이 활성 상태인 경우에만 실제 정보 사용
+        if (board.getMember() != null && "active".equals(board.getMember().getMemberStatus())) {
+            authorName = board.getMember().getMemberName();
+            authorNickname = board.getMember().getMemberNickname();
+            authorPhoto = board.getMember().getMemberPhoto();
+        }
+
         return BoardResponse.builder()
                 .boardNo(board.getBoardNo())
                 .memberNo(board.getMember().getMemberNo())
-                .memberName(board.getMember().getMemberName())
-                .memberNickname(board.getMember().getMemberNickname())
+                .memberName(authorName)
+                .memberNickname(authorNickname)
+                .memberPhoto(authorPhoto)
                 .memberPhoto(board.getMember().getMemberPhoto())
                 .boardType(board.getBoardType())
                 .boardCategory(board.getBoardCategory())

@@ -37,8 +37,8 @@ public class FollowService {
         Member follower = memberRepository.findById(memberNo)
                 .orElseThrow(() -> new IllegalArgumentException("회원을 찾을 수 없습니다."));
 
-        Member following = memberRepository.findByMemberNickname(username)
-                .orElseThrow(() -> new IllegalArgumentException("팔로우할 사용자를 찾을 수 없습니다."));
+        Member following = memberRepository.findByMemberNicknameAndMemberStatus(username, "active")
+                .orElseThrow(() -> new IllegalArgumentException("팔로우할 사용자를 찾을 수 없거나 탈퇴한 회원입니다."));
 
         // 자기 자신을 팔로우할 수 없음
         if (follower.getMemberNo().equals(following.getMemberNo())) {
@@ -179,8 +179,10 @@ public class FollowService {
                 .collect(Collectors.toList());
 
         // 자신을 제외하고 팔로우하지 않은 사용자 목록
-        List<Member> suggestedMembers = memberRepository.findTop10ByMemberNoNotInAndMemberNoNot(
-                followingIds.isEmpty() ? Collections.singletonList(-1L) : followingIds, memberNo);
+        List<Member> suggestedMembers = memberRepository.findTop10ByMemberNoNotInAndMemberNoNotAndMemberStatus(
+                followingIds.isEmpty() ? Collections.singletonList(-1L) : followingIds,
+                memberNo,
+                "active");
 
         // 반환 데이터 구성
         List<Map<String, Object>> result = new ArrayList<>();

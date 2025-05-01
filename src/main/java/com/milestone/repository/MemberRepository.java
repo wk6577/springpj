@@ -22,6 +22,9 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
     // 닉네임 존재 여부 확인
     boolean existsByMemberNickname(String memberNickname);
 
-    // 추천 사용자 조회 (팔로우하지 않은 사용자들 중 10명)
-    List<Member> findTop10ByMemberNoNotInAndMemberNoNot(List<Long> followingIds, Long memberNo);
+    // 추천 사용자 조회 (팔로우하지 않은 활성 사용자들 중 10명)
+    List<Member> findTop10ByMemberNoNotInAndMemberNoNotAndMemberStatus(List<Long> followingIds, Long memberNo, String memberStatus);
+
+    // 닉네임과 상태로 회원 찾기
+    Optional<Member> findByMemberNicknameAndMemberStatus(String memberNickname, String memberStatus);
 }
