@@ -173,4 +173,29 @@ public class BoardController {
         List<BoardResponse> boards = boardService.getBoardsByMember(memberNo);
         return ResponseEntity.ok(boards);
     }
+
+    /**
+     * 게시물 카테고리 변경 API
+     */
+    @PutMapping("/{boardNo}/category")
+    public ResponseEntity<Object> updateBoardCategory(
+            @PathVariable Long boardNo,
+            @RequestParam("category") String category,
+            HttpSession session) {
+        try {
+            logger.info("게시물 카테고리 변경 요청 - 게시물 ID: {}, 카테고리: {}", boardNo, category);
+            BoardResponse response = boardService.updateBoardCategory(boardNo, category, session);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            logger.warn("게시물 카테고리 변경 실패: {}", e.getMessage());
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        } catch (Exception e) {
+            logger.error("게시물 카테고리 변경 중 오류 발생: {}", e.getMessage(), e);
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", "게시물 카테고리 변경 중 오류가 발생했습니다.");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
 }

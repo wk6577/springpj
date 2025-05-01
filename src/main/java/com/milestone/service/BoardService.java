@@ -195,6 +195,7 @@ public class BoardService {
                 .boardLike(0L)
                 .boardScrap(0L)
                 .boardReadhit(0L)
+                .boardCategory(request.getBoardCategory() != null ? request.getBoardCategory() : "keyMemory")
                 .build();
 
         // 게시물 저장
@@ -508,5 +509,31 @@ public class BoardService {
                 .isScraped(isScraped)
                 .replyCount(replyCount)
                 .build();
+    }
+
+    /**
+     * 게시물 카테고리 변경
+     */
+    @Transactional
+    public BoardResponse updateBoardCategory(Long boardNo, String category, HttpSession session) {
+        Long memberNo = (Long) session.getAttribute(SESSION_KEY);
+        if (memberNo == null) {
+            throw new IllegalArgumentException("로그인이 필요합니다.");
+        }
+
+        Board board = boardRepository.findById(boardNo)
+                .orElseThrow(() -> new IllegalArgumentException("게시물을 찾을 수 없습니다: " + boardNo));
+
+        // 게시물 작성자 확인
+        if (!board.getMember().getMemberNo().equals(memberNo)) {
+            throw new IllegalArgumentException("게시물을 수정할 권한이 없습니다.");
+        }
+
+        // 카테고리 업데이트
+        board.setBoardCategory(category);
+        Board updatedBoard = boardRepository.save(board);
+
+        logger.info("게시물 카테고리 변경 성공 - ID: {}, 카테고리: {}", boardNo, category);
+        return convertToDto(updatedBoard);
     }
 }

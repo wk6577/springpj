@@ -27,7 +27,7 @@ public class BoardRequest {
     @Size(max = 2000, message = "게시물 내용은 최대 2000자입니다.")
     private String boardContent;
 
-    private String boardVisible; // "public", "logined", "follow"
+    private String boardVisible; // "public", "follow", "private"
 
     private String tags; // JSON 형식의 태그 배열 문자열 (예: ["java", "spring", "react"])
 
