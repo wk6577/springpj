@@ -45,21 +45,19 @@ public class TagService {
             // 태그 이름 정리 (공백 제거, 소문자 변환)
             String normalizedTagName = normalizeTagName(tagName);
 
-            // 태그 저장 또는 기존 태그 조회
-            Tag tag = saveOrGetTag(normalizedTagName);
-
-            // 게시물-태그 연결 중복 검사
-            if (boardTagRepository.existsByBoardBoardNoAndTagName(board.getBoardNo(), tag.getTagName())) {
+            // 중복 태그 확인
+            boolean isDuplicate = tagRepository.existsByBoardBoardNoAndTagName(board.getBoardNo(), normalizedTagName);
+            if (isDuplicate) {
                 continue;
             }
 
-            // 게시물-태그 연결 저장
-            BoardTag boardTag = BoardTag.builder()
+            // 새 태그 생성 및 저장
+            Tag tag = Tag.builder()
+                    .tagName(normalizedTagName)
                     .board(board)
-                    .tagName(tag.getTagName())
                     .build();
 
-            boardTagRepository.save(boardTag);
+            tagRepository.save(tag);
         }
     }
 
@@ -75,33 +73,34 @@ public class TagService {
                 .collect(Collectors.toList());
 
         // 기존 태그 가져오기
-        List<String> existingTags = getBoardTags(board.getBoardNo());
+        List<Tag> existingTags = tagRepository.findByBoardBoardNo(board.getBoardNo());
+        List<String> existingTagNames = existingTags.stream()
+                .map(Tag::getTagName)
+                .collect(Collectors.toList());
 
         // 삭제할 태그 찾기 (기존 태그 중 새로운 태그 목록에 없는 것)
-        List<String> tagsToRemove = existingTags.stream()
-                .filter(tag -> !normalizedTagNames.contains(tag))
+        List<Tag> tagsToRemove = existingTags.stream()
+                .filter(tag -> !normalizedTagNames.contains(tag.getTagName()))
                 .collect(Collectors.toList());
 
         // 추가할 태그 찾기 (새로운 태그 중 기존 태그 목록에 없는 것)
         List<String> tagsToAdd = normalizedTagNames.stream()
-                .filter(tag -> !existingTags.contains(tag))
+                .filter(tag -> !existingTagNames.contains(tag))
                 .collect(Collectors.toList());
 
         // 태그 삭제
-        for (String tagName : tagsToRemove) {
-            boardTagRepository.deleteByBoardBoardNoAndTagName(board.getBoardNo(), tagName);
+        for (Tag tag : tagsToRemove) {
+            tagRepository.delete(tag);
         }
 
         // 태그 추가
         for (String tagName : tagsToAdd) {
-            Tag tag = saveOrGetTag(tagName);
-
-            BoardTag boardTag = BoardTag.builder()
+            Tag tag = Tag.builder()
+                    .tagName(tagName)
                     .board(board)
-                    .tagName(tag.getTagName())
                     .build();
 
-            boardTagRepository.save(boardTag);
+            tagRepository.save(tag);
         }
     }
 
@@ -110,7 +109,7 @@ public class TagService {
      */
     @Transactional
     public void deleteBoardTags(Board board) {
-        boardTagRepository.deleteByBoardBoardNo(board.getBoardNo());
+        tagRepository.deleteByBoardBoardNo(board.getBoardNo());
     }
 
     /**
@@ -118,24 +117,10 @@ public class TagService {
      */
     @Transactional(readOnly = true)
     public List<String> getBoardTags(Long boardNo) {
-        List<BoardTag> boardTags = boardTagRepository.findByBoardBoardNo(boardNo);
-        return boardTags.stream()
-                .map(BoardTag::getTagName)
+        List<Tag> tags = tagRepository.findByBoardBoardNo(boardNo);
+        return tags.stream()
+                .map(Tag::getTagName)
                 .collect(Collectors.toList());
-    }
-
-    /**
-     * 태그 저장 또는 기존 태그 조회
-     */
-    @Transactional
-    public Tag saveOrGetTag(String tagName) {
-        return tagRepository.findByTagName(tagName)
-                .orElseGet(() -> {
-                    Tag newTag = Tag.builder()
-                            .tagName(tagName)
-                            .build();
-                    return tagRepository.save(newTag);
-                });
     }
 
     /**
@@ -154,16 +139,11 @@ public class TagService {
         // 태그 이름 정규화
         String normalizedTagName = normalizeTagName(tagName);
 
-        // 태그가 존재하는지 확인
-        boolean tagExists = tagRepository.existsByTagName(normalizedTagName);
-
-        if (!tagExists) {
-            logger.warn("요청한 태그가 존재하지 않음: {}", normalizedTagName);
-            return new ArrayList<>();
-        }
-
-        // 게시물 ID 목록 조회
-        return boardTagRepository.findBoardIdsByTagName(normalizedTagName);
+        // 태그로 게시물 ID 목록 직접 조회
+        List<Tag> tags = tagRepository.findByTagName(normalizedTagName);
+        return tags.stream()
+                .map(tag -> tag.getBoard().getBoardNo())
+                .collect(Collectors.toList());
     }
 
     /**
