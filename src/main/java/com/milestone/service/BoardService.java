@@ -350,7 +350,7 @@ public class BoardService {
                     // 이미지 바이너리 및 MIME 타입
                     byte[] imageData = image.getBytes();
                     String contentType = image.getContentType();
-                    String imagePath = "/api/images/" + fileName;
+                    String imagePath = "/api/images/" + updatedBoard.getBoardNo();
 
                     BoardImage boardImage = BoardImage.builder()
                             .board(updatedBoard)
