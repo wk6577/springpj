@@ -218,11 +218,15 @@ public class BoardService {
         List<MultipartFile> images = request.getImages(); // 누락된 선언 추가
 
         if (images != null && !images.isEmpty()) {
-            for (int i = 0; i < images.size(); i++) {
-                MultipartFile image = images.get(i);
-                if (image == null || image.isEmpty()) continue;
+            try {
+                // 기존 이미지가 있으면 삭제 (새로운 게시물이므로 불필요하지만 일관성을 위해 추가)
+                boardImageRepository.deleteByBoardBoardNo(savedBoard.getBoardNo());
 
-                try {
+                // 새 이미지 저장
+                for (int i = 0; i < images.size(); i++) {
+                    MultipartFile image = images.get(i);
+                    if (image == null || image.isEmpty()) continue;
+
                     // 파일 이름 및 확장자
                     String originalFilename = image.getOriginalFilename();
                     String fileExtension = "";
@@ -234,7 +238,7 @@ public class BoardService {
                     // 이미지 바이너리 및 MIME 타입
                     byte[] imageData = image.getBytes();
                     String contentType = image.getContentType();
-                    String imagePath = "/api/images/" + fileName;
+                    String imagePath = "/api/images/" + savedBoard.getBoardNo();
 
                     BoardImage boardImage = BoardImage.builder()
                             .board(savedBoard)
@@ -253,11 +257,10 @@ public class BoardService {
                     }
 
                     logger.info("이미지 저장 완료: {}", fileName);
-
-                } catch (IOException e) {
-                    logger.error("이미지 처리 실패: {}", e.getMessage(), e);
-                    throw new RuntimeException("이미지 저장 중 오류가 발생했습니다.", e);
                 }
+            } catch (IOException e) {
+                logger.error("이미지 처리 실패: {}", e.getMessage(), e);
+                throw new RuntimeException("이미지 저장 중 오류가 발생했습니다.", e);
             }
         }
 
@@ -347,7 +350,7 @@ public class BoardService {
                     // 이미지 바이너리 및 MIME 타입
                     byte[] imageData = image.getBytes();
                     String contentType = image.getContentType();
-                    String imagePath = "/api/images/" + updatedBoard.getBoardNo();
+                    String imagePath = "/api/images/" + fileName;
 
                     BoardImage boardImage = BoardImage.builder()
                             .board(updatedBoard)
