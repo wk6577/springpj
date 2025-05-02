@@ -18,7 +18,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -29,10 +28,9 @@ public class TagService {
     private final TagRepository tagRepository;
     private final BoardTagRepository boardTagRepository;
     private final BoardRepository boardRepository;
+    private final ObjectMapper objectMapper;
     private final BoardImageRepository boardImageRepository;
     private final ReplyRepository replyRepository;
-
-    private final ObjectMapper objectMapper;
 
     /**
      * 게시물에 태그 저장
@@ -196,8 +194,6 @@ public class TagService {
             return new ArrayList<>();
         }
     }
-
-
     public List<TagBoardCountDto> searchNameByTag(String query){
 
         List<TagBoardCountDto> tags = new ArrayList<TagBoardCountDto>();

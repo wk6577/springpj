@@ -38,4 +38,8 @@ public interface TagRepository extends JpaRepository<Tag, Long> {
 
     @Query("SELECT t FROM Tag t WHERE t.tagName = :tagName")
     List<Tag> findTagsByTagName(@Param("tagName") String tagName);
+
+    List<Tag> findByBoardBoardNo(Long boardNo);
+
+    boolean existsByBoardBoardNoAndTagName(Long boardNo, String normalizedTagName);
 }
