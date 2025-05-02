@@ -14,10 +14,16 @@ import java.util.Optional;
 public interface TagRepository extends JpaRepository<Tag, Long> {
 
     // 태그명으로 태그 조회
-    Optional<Tag> findByTagName(String tagName);
+    // Optional<Tag> findByTagName(String tagName);
 
     // 태그명 존재 여부 확인
     boolean existsByTagName(String tagName);
+
+    // 게시물별 태그 삭제
+    void deleteByBoardBoardNo(Long boardNo);
+
+    // 태그명으로 태그 목록 조회
+    List<Tag> findByTagName(String tagName);
 
     @Query("SELECT new com.milestone.dto.TagBoardCountDto(t.tagName, COUNT(DISTINCT t.board.boardNo)) " +
             "FROM Tag t " +
