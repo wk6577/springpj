@@ -47,7 +47,7 @@ public class Board {
     @Column(name = "board_readhit", nullable = false)
     private Long boardReadhit;
 
-    @Column(name = "board_visible", nullable = false, columnDefinition = "ENUM('public', 'logined', 'follow') DEFAULT 'public'")
+    @Column(name = "board_visible", nullable = false, columnDefinition = "ENUM('public', 'follow', 'private') DEFAULT 'public'")
     private String boardVisible;
 
     @CreationTimestamp
