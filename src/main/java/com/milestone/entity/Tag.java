@@ -25,6 +25,10 @@ public class Tag {
     @Column(name = "tag_name", nullable = false, length = 20, unique = true)
     private String tagName;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "board_no")
+    private Board board;
+
     @CreationTimestamp
     @Column(name = "tag_inputdate", nullable = false, updatable = false)
     private LocalDateTime tagInputdate;

@@ -1,10 +1,9 @@
 package com.milestone.controller;
 
-import com.milestone.dto.MemberJoinRequest;
-import com.milestone.dto.MemberLoginRequest;
-import com.milestone.dto.MemberResponse;
-import com.milestone.dto.MemberUpdateRequest;
+import com.milestone.dto.*;
+import com.milestone.entity.Member;
 import com.milestone.service.MemberService;
+import com.milestone.service.SearchService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,9 +14,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+
+import java.util.*;
 
 @RestController
 @RequestMapping("/api/members")
@@ -26,6 +24,7 @@ public class MemberController {
 
     private static final Logger logger = LoggerFactory.getLogger(MemberController.class);
     private final MemberService memberService;
+    private final SearchService searchService;
 
     /**
      * 회원 가입 API
@@ -216,5 +215,31 @@ public class MemberController {
             errorResponse.put("error", "회원 정보 조회 중 오류가 발생했습니다.");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<List<MemberSearchDto>> searchMembers(@RequestParam String query) {
+
+
+        List<Member> members = searchService.memberIdSearch(query);
+        List<MemberSearchDto> results = new ArrayList<MemberSearchDto>();
+        MemberSearchDto dto = new MemberSearchDto();
+
+        if(members != null){
+            for(Member mem : members){
+
+                dto.setMemberNo(mem.getMemberNo());
+                dto.setMemberName(mem.getMemberName());
+                dto.setMemberEmail(mem.getMemberEmail());
+                dto.setMemberNickname(mem.getMemberNickname());
+                dto.setMemberPhoto(mem.getMemberPhoto());
+                dto.setMemberPhotoType(mem.getMemberPhotoType());
+                results.add(dto);
+            }
+
+            return ResponseEntity.ok(results);
+        }
+
+        return null;
     }
 }

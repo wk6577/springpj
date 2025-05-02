@@ -1,10 +1,12 @@
 package com.milestone.service;
 
+import com.milestone.dto.TagBoardCountDto;
+import com.milestone.dto.TagByBoardDto;
 import com.milestone.entity.Board;
+import com.milestone.entity.BoardImage;
 import com.milestone.entity.BoardTag;
 import com.milestone.entity.Tag;
-import com.milestone.repository.BoardTagRepository;
-import com.milestone.repository.TagRepository;
+import com.milestone.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,6 +18,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -25,6 +28,10 @@ public class TagService {
     private static final Logger logger = LoggerFactory.getLogger(TagService.class);
     private final TagRepository tagRepository;
     private final BoardTagRepository boardTagRepository;
+    private final BoardRepository boardRepository;
+    private final BoardImageRepository boardImageRepository;
+    private final ReplyRepository replyRepository;
+
     private final ObjectMapper objectMapper;
 
     /**
@@ -208,5 +215,73 @@ public class TagService {
             logger.error("태그 파싱 중 오류 발생: {}", e.getMessage(), e);
             return new ArrayList<>();
         }
+    }
+
+
+    public List<TagBoardCountDto> searchNameByTag(String query){
+
+        List<TagBoardCountDto> tags = new ArrayList<TagBoardCountDto>();
+        tags = tagRepository.findTagNameWithBoardCount(query);
+        return tags;
+    }
+
+    public int countByTag(String tagName) {
+
+        int boardCount = tagRepository.countByTagName(tagName);
+        return boardCount;
+    }
+
+
+
+
+    public List<TagByBoardDto> findTagByBoardDtosByTagName(String tagName) {
+
+
+
+        //태그에 해당하는 태그들을 갖고옴
+        List<Tag> tags = tagRepository.findTagsByTagName(tagName);
+
+        System.out.println("tags" + tags);
+
+        List<Board> boards = new ArrayList<Board>();
+
+        for(Tag tg : tags){
+            Board board = new Board();
+            board = boardRepository.findByBoardNo(tg.getBoard().getBoardNo());
+            boards.add(board);
+        }
+
+
+        System.out.println("boards : " + boards);
+
+
+        List<TagByBoardDto> results = new ArrayList<TagByBoardDto>();
+        TagByBoardDto dto = new TagByBoardDto();
+
+        for(Board board : boards){
+
+            System.out.println("BOARD : " + board);
+
+            dto.setBoardNo(board.getBoardNo());
+            dto.setBoardLike(board.getBoardLike());
+            dto.setBoardType(board.getBoardType());
+            dto.setBoardTitle(board.getBoardTitle());
+            dto.setBoardInputdate(board.getBoardInputdate());
+
+            List<BoardImage> images = boardImageRepository.findByBoardBoardNoOrderByBoardImageOrderAsc(board.getBoardNo());
+            dto.setThumbnailImage(images.get(0).getBoardImageName());
+
+            //댓글개수
+            Long reples = replyRepository.countByBoardBoardNoAndReplyStatus(board.getBoardNo(),"active");
+
+            dto.setBoardReplies(reples);
+
+            results.add(dto);
+        }
+
+        System.out.println("results : " + results);
+
+
+        return results;
     }
 }

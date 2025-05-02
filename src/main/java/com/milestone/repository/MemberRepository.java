@@ -1,7 +1,9 @@
 package com.milestone.repository;
 
+import com.milestone.dto.MemberSearchDto;
 import com.milestone.entity.Member;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -27,4 +29,7 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
 
     // 닉네임과 상태로 회원 찾기
     Optional<Member> findByMemberNicknameAndMemberStatus(String memberNickname, String memberStatus);
+
+
+    Optional<List<Member>> findByMemberNicknameContainingAndMemberVisibleAndMemberStatusOrderByMemberLastloginDesc(String query, String aPublic, String active);
 }

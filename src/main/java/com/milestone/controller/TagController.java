@@ -1,5 +1,8 @@
 package com.milestone.controller;
 
+import com.milestone.dto.TagBoardCountDto;
+import com.milestone.dto.TagByBoardDto;
+import com.milestone.entity.Tag;
 import com.milestone.service.BoardService;
 import com.milestone.service.TagService;
 import com.milestone.dto.BoardResponse;
@@ -10,6 +13,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.servlet.http.HttpSession;
+
+import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -49,4 +54,37 @@ public class TagController {
 
         return ResponseEntity.ok(boards);
     }
+
+    // 특정 태그가 포함된 게시물 목록 + 게시물 수
+    @GetMapping("/searchtag")
+    public ResponseEntity<List<TagBoardCountDto>> searchTagByBoardCounts(@RequestParam String query){
+
+
+        List<TagBoardCountDto> tags = tagService.searchNameByTag(query);
+
+
+        return ResponseEntity.ok(tags);
+    }
+
+
+
+    /**
+     * 특정 태그가 포함된 게시물 목록 조회 - PathVariable 방식
+     * @param tagName 태그명
+     * @return 게시물 목록
+     */
+    @GetMapping("/boardlist/{tagName}")
+    public ResponseEntity<List<TagByBoardDto>> boardlistByTagName(@PathVariable String tagName) {
+        System.out.println("TAG NAME : " + tagName);
+
+        // 태그별 게시물 조회
+        List<TagByBoardDto> boardList = tagService.findTagByBoardDtosByTagName(tagName);
+
+        System.out.println("boardlist : " + boardList);
+
+
+        return ResponseEntity.ok(boardList);
+//
+    }
+
 }
