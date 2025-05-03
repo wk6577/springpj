@@ -22,6 +22,7 @@ public class MemberResponse {
     private String memberIntroduce;
     private String memberVisible;
     private LocalDateTime memberJoindate;
+    private String memberRole;
 
     // Entity를 DTO로 변환하는 정적 메서드
     public static MemberResponse fromEntity(Member member) {
@@ -34,6 +35,7 @@ public class MemberResponse {
                 .memberIntroduce(member.getMemberIntroduce())
                 .memberVisible(member.getMemberVisible())
                 .memberJoindate(member.getMemberJoindate())
+                .memberRole(member.getMemberRole())
                 .build();
     }
 }

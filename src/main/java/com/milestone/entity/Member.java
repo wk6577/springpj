@@ -67,4 +67,17 @@ public class Member {
 
     @Column(name = "member_lastlogin")
     private LocalDateTime memberLastlogin;
+
+    @Column(name = "member_role", nullable = false, columnDefinition = "VARCHAR(10) DEFAULT 'USER'")
+    private String memberRole = "USER";
+
+    @Column(name = "member_suspend_until")
+    private LocalDateTime memberSuspendUntil;
+
+    public boolean isSuspended() {
+        return "suspended".equals(this.memberStatus) &&
+                this.memberSuspendUntil != null &&
+                this.memberSuspendUntil.isAfter(LocalDateTime.now());
+    }
+
 }

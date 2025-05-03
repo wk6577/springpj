@@ -2,6 +2,7 @@ package com.milestone.repository;
 
 import com.milestone.entity.Board;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -31,4 +32,21 @@ public interface BoardRepository extends JpaRepository<Board, Long> {
     List<Board> findByBoardNoIn(List<Long> boardIds);
 
     Board findByBoardNo(Long boardNo);
+
+    // 📌 월별 게시글 수를 집계하는 쿼리
+    // - FUNCTION('MONTH', b.boardInputdate): 게시글의 등록일(boardInputdate)에서 월만 추출
+    // - COUNT(b): 해당 월에 작성된 게시글 수
+    // - GROUP BY month: 월 기준으로 그룹핑
+    // - ORDER BY month: 월 순서대로 정렬
+    @Query("SELECT FUNCTION('MONTH', b.boardInputdate) AS month, COUNT(b) FROM Board b GROUP BY month ORDER BY month")
+    List<Object[]> countMonthlyPosts();
+
+    // 📌 일별 게시글 수를 집계하는 쿼리
+    // - FUNCTION('DATE', b.boardInputdate): 날짜만 추출
+    @Query("SELECT FUNCTION('DATE', b.boardInputdate) AS day, COUNT(b) FROM Board b GROUP BY day ORDER BY day")
+    List<Object[]> countDailyPosts();
+
+    @Query("SELECT COUNT(b) FROM Board b")
+    int countTotalPosts();
+
 }
