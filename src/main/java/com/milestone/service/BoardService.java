@@ -5,12 +5,7 @@ import com.milestone.dto.BoardResponse;
 import com.milestone.entity.Board;
 import com.milestone.entity.BoardImage;
 import com.milestone.entity.Member;
-import com.milestone.repository.BoardImageRepository;
-import com.milestone.repository.BoardRepository;
-import com.milestone.repository.LikeRepository;
-import com.milestone.repository.MemberRepository;
-import com.milestone.repository.ReplyRepository;
-import com.milestone.repository.ScrapRepository;
+import com.milestone.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +32,7 @@ public class BoardService {
     private final LikeRepository likeRepository;
     private final ScrapRepository scrapRepository;
     private final ReplyRepository replyRepository;
+    private final FollowRepository followRepository;
     private final TagService tagService;
     private static final String SESSION_KEY = "LOGGED_IN_MEMBER";
 
@@ -44,9 +40,13 @@ public class BoardService {
      * 모든 게시물 조회
      */
     @Transactional(readOnly = true)
-    public List<BoardResponse> getAllBoards() {
+    public List<BoardResponse> getAllBoards(HttpSession session) {
+        Long currentMemberNo = (Long) session.getAttribute(SESSION_KEY);
         List<Board> boards = boardRepository.findAllByOrderByBoardInputdateDesc();
+
+        // 접근 권한이 있는 게시물만 필터링
         return boards.stream()
+                .filter(board -> hasBoardAccess(board, currentMemberNo))
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
     }
@@ -59,11 +59,15 @@ public class BoardService {
         Board board = boardRepository.findById(boardNo)
                 .orElseThrow(() -> new IllegalArgumentException("게시물을 찾을 수 없습니다: " + boardNo));
 
+        Long currentMemberNo = (Long) session.getAttribute(SESSION_KEY);
+
+        // 게시물 접근 권한 검사 추가
+        validateBoardAccess(board, currentMemberNo);
+
         // 조회수 증가
         board.setBoardReadhit(board.getBoardReadhit() + 1);
         boardRepository.save(board);
 
-        Long currentMemberNo = (Long) session.getAttribute(SESSION_KEY);
         boolean isLiked = false;
         boolean isScraped = false;
 
@@ -142,11 +146,73 @@ public class BoardService {
      * 게시물 타입별 조회
      */
     @Transactional(readOnly = true)
-    public List<BoardResponse> getBoardsByType(String boardType) {
+    public List<BoardResponse> getBoardsByType(String boardType, HttpSession session) {
+        Long currentMemberNo = (Long) session.getAttribute(SESSION_KEY);
         List<Board> boards = boardRepository.findByBoardTypeOrderByBoardInputdateDesc(boardType);
+
+        // 접근 권한이 있는 게시물만 필터링
         return boards.stream()
+                .filter(board -> hasBoardAccess(board, currentMemberNo))
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * 게시물 접근 권한 검사
+     * @param board 접근하려는 게시물
+     * @param currentMemberNo 현재 로그인한 회원 번호
+     * @return 접근 가능 여부
+     */
+    private boolean hasBoardAccess(Board board, Long currentMemberNo) {
+        // 전체 공개 게시물은 모두 접근 가능
+        if ("public".equals(board.getBoardVisible())) {
+            return true;
+        }
+
+        // 비로그인 사용자는 전체 공개 게시물만 접근 가능
+        if (currentMemberNo == null) {
+            return false;
+        }
+
+        // 본인 게시물은 항상 접근 가능
+        if (board.getMember().getMemberNo().equals(currentMemberNo)) {
+            return true;
+        }
+
+        // private(비공개) 게시물은 본인만 접근 가능 - 여기서 이미 본인이 아님이 확인됨
+        if ("private".equals(board.getBoardVisible())) {
+            return false;
+        }
+
+        // 팔로워 공개 게시물이면 팔로우 관계 확인
+        if ("follow".equals(board.getBoardVisible())) {
+            // 게시물 작성자의 팔로워 목록에 현재 사용자가 있는지 확인
+            return followRepository.existsByFollowMemberMemberNoAndFollowerMemberNoAndFollowStatus(
+                    board.getMember().getMemberNo(), currentMemberNo, "accepted");
+        }
+
+        // 그 외는 접근 불가
+        return false;
+    }
+
+    /**
+     * 게시물 접근 권한 검사 후 예외 발생
+     * @param board 접근하려는 게시물
+     * @param currentMemberNo 현재 로그인한 회원 번호
+     * @throws IllegalArgumentException 접근 권한이 없는 경우
+     */
+    private void validateBoardAccess(Board board, Long currentMemberNo) {
+        if (!hasBoardAccess(board, currentMemberNo)) {
+            String message;
+            if (currentMemberNo == null) {
+                message = "로그인이 필요한 게시물입니다.";
+            } else if ("follow".equals(board.getBoardVisible())) {
+                message = "팔로워만 볼 수 있는 게시물입니다.";
+            } else {
+                message = "접근 권한이 없는 게시물입니다.";
+            }
+            throw new IllegalArgumentException(message);
+        }
     }
 
     /**
@@ -185,13 +251,20 @@ public class BoardService {
         Member member = memberRepository.findById(memberNo)
                 .orElseThrow(() -> new IllegalArgumentException("회원을 찾을 수 없습니다."));
 
+        // 게시물 공개 설정 처리 - 사용자 설정 반영
+        String boardVisible = request.getBoardVisible();
+        if (boardVisible == null || boardVisible.isEmpty()) {
+            // 기본값은 사용자의 전체 설정을 따름
+            boardVisible = member.getMemberVisible();
+        }
+
         // 게시물 엔티티 생성
         Board board = Board.builder()
                 .member(member)
                 .boardType(request.getBoardType())
                 .boardTitle(request.getBoardTitle())
                 .boardContent(request.getBoardContent())
-                .boardVisible(request.getBoardVisible())
+                .boardVisible(boardVisible)
                 .boardLike(0L)
                 .boardScrap(0L)
                 .boardReadhit(0L)

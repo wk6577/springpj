@@ -18,8 +18,8 @@ public class PopupNotice {
     private Long id;
 
     @Column(nullable = false, length = 255)
-    private String notice; // 공지 내용
+    private String content;
 
     @Column(nullable = false)
-    private LocalDateTime createdAt; // 생성 시간
+    private LocalDateTime createdDate;
 }

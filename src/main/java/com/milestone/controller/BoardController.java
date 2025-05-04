@@ -30,9 +30,9 @@ public class BoardController {
      * 모든 게시물 조회 API
      */
     @GetMapping
-    public ResponseEntity<List<BoardResponse>> getAllBoards() {
+    public ResponseEntity<List<BoardResponse>> getAllBoards(HttpSession session) {
         logger.info("모든 게시물 조회 요청");
-        List<BoardResponse> boards = boardService.getAllBoards();
+        List<BoardResponse> boards = boardService.getAllBoards(session);
         return ResponseEntity.ok(boards);
     }
 
@@ -50,9 +50,9 @@ public class BoardController {
      * 스터디 게시물 조회 API
      */
     @GetMapping("/study")
-    public ResponseEntity<List<BoardResponse>> getStudyBoards() {
+    public ResponseEntity<List<BoardResponse>> getStudyBoards(HttpSession session) {
         logger.info("스터디 게시물 조회 요청");
-        List<BoardResponse> studyBoards = boardService.getBoardsByType("study");
+        List<BoardResponse> studyBoards = boardService.getBoardsByType("study", session);
         return ResponseEntity.ok(studyBoards);
     }
 

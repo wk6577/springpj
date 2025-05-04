@@ -1,4 +1,3 @@
-// src/main/java/com/milestone/service/PopupNoticeService.java
 package com.milestone.service;
 
 import com.milestone.dto.PopupNoticeResponse;
@@ -18,13 +17,13 @@ public class PopupNoticeService {
 
     public void saveNotice(String content) {
         PopupNotice newNotice = PopupNotice.builder()
-                .notice(content)
-                .createdAt(LocalDateTime.now())
+                .content(content)
+                .createdDate(LocalDateTime.now())
                 .build();
         popupNoticeRepository.save(newNotice);
     }
 
     public PopupNotice getLatestNotice() {
-        return popupNoticeRepository.findTopByOrderByCreatedAtDesc();
+        return popupNoticeRepository.findTopByOrderByCreatedDateDesc();
     }
 }

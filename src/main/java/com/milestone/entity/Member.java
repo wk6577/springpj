@@ -52,7 +52,7 @@ public class Member {
     @Column(name = "member_introduce", length = 500)
     private String memberIntroduce;
 
-    @Column(name = "member_visible", nullable = false, columnDefinition = "VARCHAR(10) DEFAULT 'public'")
+    @Column(name = "member_visible", nullable = false, columnDefinition = "ENUM('public', 'follow', 'private') DEFAULT 'public'")
     private String memberVisible = "public";
 
     @Column(name = "member_qualify", length = 10)

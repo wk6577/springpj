@@ -4,7 +4,9 @@ import com.milestone.dto.MemberJoinRequest;
 import com.milestone.dto.MemberLoginRequest;
 import com.milestone.dto.MemberResponse;
 import com.milestone.dto.MemberUpdateRequest;
+import com.milestone.entity.Board;
 import com.milestone.entity.Member;
+import com.milestone.repository.BoardRepository;
 import com.milestone.repository.MemberRepository;
 import com.milestone.util.PasswordUtils;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +24,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -30,6 +33,7 @@ public class MemberService {
 
     private static final Logger logger = LoggerFactory.getLogger(MemberService.class);
     private final MemberRepository memberRepository;
+    private final BoardRepository boardRepository;
     private static final String SESSION_KEY = "LOGGED_IN_MEMBER";
     private static final String DEFAULT_PROFILE_IMAGE_PATH = "/icon/profileimage.png";
 
@@ -180,9 +184,19 @@ public class MemberService {
             member.setMemberIntroduce(request.getMemberIntroduce());
         }
 
-        // 계정 공개 범위 변경
+        // 공개 설정 변경
         if (request.getMemberVisible() != null && !request.getMemberVisible().isEmpty()) {
             member.setMemberVisible(request.getMemberVisible());
+
+            // 공개 설정 변경 시 해당 회원의 모든 게시물에도 같은 설정 적용
+            // 회원 프로필의 공개 설정이 변경되면 기존 게시물도 모두 동일하게 변경
+            List<Board> memberBoards = boardRepository.findByMemberMemberNoOrderByBoardInputdateDesc(member.getMemberNo());
+            for (Board board : memberBoards) {
+                board.setBoardVisible(request.getMemberVisible());
+            }
+            if (!memberBoards.isEmpty()) {
+                boardRepository.saveAll(memberBoards);
+            }
         }
 
         // 알림 설정 변경

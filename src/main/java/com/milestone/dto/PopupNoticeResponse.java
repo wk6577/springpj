@@ -1,4 +1,3 @@
-// src/main/java/com/milestone/dto/PopupNoticeResponse.java
 package com.milestone.dto;
 
 import com.milestone.entity.PopupNotice;
