@@ -186,7 +186,7 @@ public class BoardService {
 
         // 팔로워 공개 게시물이면 팔로우 관계 확인
         if ("follow".equals(board.getBoardVisible())) {
-            // 게시물 작성자의 팔로워 목록에 현재 사용자가 있는지 확인
+            // 게시물 작성자의 팔로워 목록에 현재 사용자가 있는지 확인 (팔로우 상태가 accepted인 경우만)
             return followRepository.existsByFollowMemberMemberNoAndFollowerMemberNoAndFollowStatus(
                     board.getMember().getMemberNo(), currentMemberNo, "accepted");
         }
