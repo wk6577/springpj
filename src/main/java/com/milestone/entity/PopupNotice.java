@@ -21,5 +21,11 @@ public class PopupNotice {
     private String content;
 
     @Column(nullable = false)
-    private LocalDateTime createdDate;
+    private LocalDateTime startDate;
+
+    @Column(nullable = false)
+    private LocalDateTime endDate;
+
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt;
 }

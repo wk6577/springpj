@@ -4,12 +4,17 @@ import com.milestone.dto.PopupNoticeRequest;
 import com.milestone.entity.PopupNotice;
 import com.milestone.service.PopupNoticeService;
 import lombok.RequiredArgsConstructor;
+import com.milestone.dto.PopupNoticeResponse;
 
 import java.util.HashMap;
 import java.util.Map;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RestController
 @RequestMapping("/api/notice")
@@ -17,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 public class PopupNoticeController {
 
     private final PopupNoticeService popupNoticeService;
+    private static final Logger logger = LoggerFactory.getLogger(PopupNoticeController.class);
 
     // 공지사항 등록 (관리자 전용)
     @PostMapping("/register")
@@ -31,22 +37,17 @@ public class PopupNoticeController {
 
         Map<String, String> response = new HashMap<>();
         response.put("message", "공지사항이 성공적으로 등록되었습니다.");
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok().body(response); // ★ 명확히 .body(response) 사용
     }
 
     // 최신 공지사항 조회
     @GetMapping("/latest")
-    public ResponseEntity<?> getLatestNotice() {
+    public ResponseEntity<PopupNoticeResponse> getLatestNotice() {
         PopupNotice notice = popupNoticeService.getLatestNotice();
         if (notice == null) {
             return ResponseEntity.noContent().build();
         }
-
-        Map<String, Object> response = new HashMap<>();
-        response.put("id", notice.getId());
-        response.put("content", notice.getContent());
-        response.put("createdDate", notice.getCreatedDate());
-
-        return ResponseEntity.ok(response);
+        PopupNoticeResponse dto = PopupNoticeResponse.fromEntity(notice);
+        return ResponseEntity.ok(dto);
     }
 }
