@@ -5,9 +5,10 @@ import com.milestone.dto.MemberLoginRequest;
 import com.milestone.dto.MemberResponse;
 import com.milestone.dto.MemberUpdateRequest;
 import com.milestone.entity.Board;
+import com.milestone.entity.Likes;
 import com.milestone.entity.Member;
-import com.milestone.repository.BoardRepository;
-import com.milestone.repository.MemberRepository;
+import com.milestone.entity.Reply;
+import com.milestone.repository.*;
 import com.milestone.util.PasswordUtils;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -21,8 +22,6 @@ import org.springframework.web.multipart.MultipartFile;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -34,6 +33,12 @@ public class MemberService {
     private static final Logger logger = LoggerFactory.getLogger(MemberService.class);
     private final MemberRepository memberRepository;
     private final BoardRepository boardRepository;
+    private final BoardImageRepository boardImageRepository;
+    private final LikeRepository likeRepository;
+    private final ScrapRepository scrapRepository;
+    private final ReplyRepository replyRepository;
+    private final FollowRepository followRepository;
+    private final TagRepository tagRepository;
     private static final String SESSION_KEY = "LOGGED_IN_MEMBER";
     private static final String DEFAULT_PROFILE_IMAGE_PATH = "/icon/profileimage.png";
 
@@ -249,7 +254,7 @@ public class MemberService {
     }
 
     /**
-     * 회원 탈퇴
+     * 회원 탈퇴 - 회원 데이터 및 관련 데이터 모두 삭제
      */
     @Transactional
     public void withdrawMember(HttpSession session) {
@@ -261,14 +266,94 @@ public class MemberService {
         Member member = memberRepository.findById(memberNo)
                 .orElseThrow(() -> new IllegalArgumentException("회원을 찾을 수 없습니다."));
 
-        // 회원 상태를 "inactive"로 변경 (실제 삭제 대신 논리적 삭제)
-        member.setMemberStatus("inactive");
-        memberRepository.save(member);
+        try {
+            // 2. 좋아요 삭제 및 카운트 감소
+            List<Likes> userLikes = likeRepository.findByMember(member);
+            for (Likes like : userLikes) {
+                // 좋아요 타입에 따라 카운트 감소
+                if ("board".equals(like.getLikeType())) {
+                    // 게시물 좋아요 감소
+                    Board board = boardRepository.findById(like.getLikeTypeNo())
+                            .orElse(null);
+                    if (board != null && board.getBoardLike() > 0) {
+                        board.setBoardLike(board.getBoardLike() - 1);
+                        boardRepository.save(board);
+                    }
+                } else if ("reply".equals(like.getLikeType())) {
+                    // 댓글 좋아요 감소
+                    Reply reply = replyRepository.findById(like.getLikeTypeNo())
+                            .orElse(null);
+                    if (reply != null && reply.getReplyLike() > 0) {
+                        reply.setReplyLike(reply.getReplyLike() - 1);
+                        replyRepository.save(reply);
+                    }
+                }
+            }
+            // 좋아요 레코드 삭제
+            likeRepository.deleteByMember(member);
+            logger.info("회원 관련 좋아요 삭제 및 카운트 감소 완료 - ID={}", memberNo);
+
+            // 3. 스크랩(북마크) 삭제 - 해당 회원이 스크랩한 모든 게시물 연결 삭제
+            scrapRepository.deleteByMember(member);
+            logger.info("회원 관련 스크랩 삭제 완료 - ID={}", memberNo);
+
+            // 4. 팔로우/팔로워 관계 삭제 - 해당 회원의 모든 팔로우 관계 삭제
+            followRepository.deleteByFollowerOrFollowMember(member, member);
+            logger.info("회원 관련 팔로우 관계 삭제 완료 - ID={}", memberNo);
+
+            // 5. 댓글 처리 - 대댓글이 있는 경우 내용만 익명화, 없으면 삭제
+            List<Reply> replies = replyRepository.findByMemberMemberNoOrderByReplyInputdateDesc(memberNo);
+            for (Reply reply : replies) {
+                List<Reply> childReplies = replyRepository.findByReplyParentReplyNo(reply.getReplyNo());
+                if (!childReplies.isEmpty()) {
+                    // 대댓글이 있으면 내용만 익명화 처리
+                    reply.setReplyContent("탈퇴한 회원의 댓글입니다.");
+                    reply.setReplyStatus("deleted");
+                    replyRepository.save(reply);
+                } else {
+                    // 대댓글이 없으면 완전 삭제
+                    replyRepository.delete(reply);
+                }
+            }
+            logger.info("회원 관련 댓글 처리 완료 - ID={}", memberNo);
+
+            // 6. 게시물 및 관련 데이터 삭제
+            List<Board> boards = boardRepository.findByMemberMemberNoOrderByBoardInputdateDesc(memberNo);
+            for (Board board : boards) {
+                // 게시물에 연결된 이미지 삭제
+                boardImageRepository.deleteByBoardBoardNo(board.getBoardNo());
+
+                // 게시물에 연결된 태그 삭제
+                tagRepository.deleteByBoardBoardNo(board.getBoardNo());
+
+                // 게시물 삭제
+                boardRepository.delete(board);
+            }
+            logger.info("회원 관련 게시물 및 이미지, 태그 삭제 완료 - ID={}", memberNo);
+
+            // 7. 회원 정보 익명화 및 상태 변경
+            member.setMemberStatus("inactive");
+            member.setMemberName("탈퇴한 회원");
+            member.setMemberNickname("탈퇴한 회원" + memberNo); // 닉네임 중복 방지
+            member.setMemberEmail("withdrawn" + memberNo + "@example.com");
+            member.setMemberPassword(""); // 비밀번호 초기화
+            member.setMemberPhone("");
+            member.setMemberPhoto(DEFAULT_PROFILE_IMAGE_PATH); // 기본 이미지로 변경
+            member.setMemberPhotoData(null);
+            member.setMemberPhotoType(null);
+            member.setMemberIntroduce("");
+
+            memberRepository.save(member);
+            logger.info("회원 정보 익명화 및 상태 변경 완료 - ID={}", memberNo);
+
+        } catch (Exception e) {
+            logger.error("회원 탈퇴 처리 중 오류 발생: {}", e.getMessage(), e);
+            throw new RuntimeException("회원 탈퇴 처리 중 오류가 발생했습니다.", e);
+        }
 
         // 세션 무효화
         session.invalidate();
-
-        logger.info("회원 탈퇴 완료: ID={}", memberNo);
+        logger.info("회원 탈퇴 프로세스 완료 - ID={}, 관련 데이터 모두 삭제 또는 익명화됨", memberNo);
     }
 
     /**
