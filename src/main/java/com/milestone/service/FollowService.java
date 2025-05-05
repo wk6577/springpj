@@ -1,5 +1,6 @@
 package com.milestone.service;
 
+import com.milestone.dto.MemberFollowDto;
 import com.milestone.entity.Follow;
 import com.milestone.entity.Member;
 import com.milestone.repository.FollowRepository;
@@ -96,14 +97,22 @@ public class FollowService {
      * 특정 사용자의 팔로워 목록 조회 (나를 팔로우하는 사람들)
      */
     @Transactional(readOnly = true)
-    public List<String> getFollowers(String username) {
+    public List<MemberFollowDto> getFollowers(String username) {
         Member member = memberRepository.findByMemberNickname(username)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
         // 팔로워 목록 조회
         List<Follow> followers = followRepository.findByFollowMemberAndFollowStatus(member, "accepted");
         return followers.stream()
-                .map(follow -> follow.getFollower().getMemberNickname())
+                .map(follow -> {
+                    Member follower = follow.getFollower();
+                    return MemberFollowDto.builder()
+                            .memberNo(follower.getMemberNo())
+                            .memberNickname(follower.getMemberNickname())
+                            .memberName(follower.getMemberName())
+                            .memberPhoto(follower.getMemberPhoto())
+                            .build();
+                })
                 .collect(Collectors.toList());
     }
 
@@ -111,14 +120,22 @@ public class FollowService {
      * 특정 사용자의 팔로잉 목록 조회 (내가 팔로우하는 사람들)
      */
     @Transactional(readOnly = true)
-    public List<String> getFollowing(String username) {
+    public List<MemberFollowDto> getFollowing(String username) {
         Member member = memberRepository.findByMemberNickname(username)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
         // 팔로잉 목록 조회
         List<Follow> following = followRepository.findByFollowerAndFollowStatus(member, "accepted");
         return following.stream()
-                .map(follow -> follow.getFollowMember().getMemberNickname())
+                .map(follow -> {
+                    Member followMember = follow.getFollowMember();
+                    return MemberFollowDto.builder()
+                            .memberNo(followMember.getMemberNo())
+                            .memberNickname(followMember.getMemberNickname())
+                            .memberName(followMember.getMemberName())
+                            .memberPhoto(followMember.getMemberPhoto())
+                            .build();
+                })
                 .collect(Collectors.toList());
     }
 

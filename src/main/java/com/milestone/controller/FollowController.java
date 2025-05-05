@@ -1,5 +1,6 @@
 package com.milestone.controller;
 
+import com.milestone.dto.MemberFollowDto;
 import com.milestone.service.FollowService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -66,9 +67,9 @@ public class FollowController {
      * 특정 사용자의 팔로워 목록 조회 API
      */
     @GetMapping("/{username}/followers")
-    public ResponseEntity<List<String>> getFollowers(@PathVariable String username) {
+    public ResponseEntity<List<MemberFollowDto>> getFollowers(@PathVariable String username) {
         logger.info("팔로워 목록 조회 요청 - 사용자: {}", username);
-        List<String> followers = followService.getFollowers(username);
+        List<MemberFollowDto> followers = followService.getFollowers(username);
         return ResponseEntity.ok(followers);
     }
 
@@ -76,9 +77,9 @@ public class FollowController {
      * 특정 사용자의 팔로잉 목록 조회 API
      */
     @GetMapping("/{username}/following")
-    public ResponseEntity<List<String>> getFollowing(@PathVariable String username) {
+    public ResponseEntity<List<MemberFollowDto>> getFollowing(@PathVariable String username) {
         logger.info("팔로잉 목록 조회 요청 - 사용자: {}", username);
-        List<String> following = followService.getFollowing(username);
+        List<MemberFollowDto> following = followService.getFollowing(username);
         return ResponseEntity.ok(following);
     }
 
