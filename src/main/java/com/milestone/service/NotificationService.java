@@ -152,9 +152,6 @@ public class NotificationService {
 
         List<Notice> noticelist = noticeRepository.findByMemberMemberNoOrderByNoticeInputdateDesc(memberNo);
 
-        System.out.println("NOTICE LIST : " + noticelist);
-
-
         return noticelist;
     }
 
