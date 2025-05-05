@@ -31,4 +31,8 @@ public interface LikeRepository extends JpaRepository<Likes, Long> {
 
     // 멤버별 특정 타입의 좋아요 목록 삭제
     void deleteByMemberAndLikeType(Member member, String likeType);
+
+    void deleteByMember(Member member);
+
+    List<Likes> findByMember(Member member);
 }
