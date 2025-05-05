@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -22,18 +23,10 @@ public class SearchService {
     @Transactional
     public List<Member> memberIdSearch (String query){
 
-
-        List<Member> members = null;
-
-        try{
-            members = memberRepository.findByMemberNicknameContainingAndMemberVisibleAndMemberStatusOrderByMemberLastloginDesc(query, "public", "active").orElseThrow(() -> new IllegalArgumentException("검색결과가 없습니다."));
-
-        }catch(Exception e){
-            e.printStackTrace();
-            throw new RuntimeException("아이디 검색 중 오류가 발생하였습니다");
-        }
-
-        return members;
+        return memberRepository
+                .findByMemberNicknameContainingAndMemberVisibleAndMemberStatusOrderByMemberLastloginDesc(
+                        query, "public", "active")
+                .orElse(Collections.emptyList());
     }
 
 }

@@ -1,5 +1,6 @@
 package com.milestone.service;
 
+import com.milestone.dto.NoticeDto;
 import com.milestone.entity.Member;
 import com.milestone.entity.Notice;
 import com.milestone.repository.MemberRepository;
@@ -11,6 +12,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.servlet.http.HttpSession;
+
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -147,7 +150,12 @@ public class NotificationService {
             throw new IllegalArgumentException("로그인이 필요합니다.");
         }
 
-        return noticeRepository.findByMemberMemberNoOrderByNoticeInputdateDesc(memberNo);
+        List<Notice> noticelist = noticeRepository.findByMemberMemberNoOrderByNoticeInputdateDesc(memberNo);
+
+        System.out.println("NOTICE LIST : " + noticelist);
+
+
+        return noticelist;
     }
 
     /**
