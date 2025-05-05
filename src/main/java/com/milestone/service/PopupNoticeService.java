@@ -1,5 +1,6 @@
 package com.milestone.service;
 
+import com.milestone.dto.PopupNoticeRequest;
 import com.milestone.dto.PopupNoticeResponse;
 import com.milestone.entity.PopupNotice;
 import com.milestone.repository.PopupNoticeRepository;
@@ -15,11 +16,12 @@ public class PopupNoticeService {
 
     private final PopupNoticeRepository popupNoticeRepository;
 
-    public void saveNotice(String content) {
+    public void saveNotice(PopupNoticeRequest request) {
         PopupNotice newNotice = PopupNotice.builder()
-                .content(content)
+                .content(request.getContent())
                 .createdDate(LocalDateTime.now())
                 .build();
+
         popupNoticeRepository.save(newNotice);
     }
 

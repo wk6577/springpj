@@ -1,5 +1,6 @@
 package com.milestone.controller;
 
+import com.milestone.dto.PopupNoticeRequest;
 import com.milestone.entity.PopupNotice;
 import com.milestone.service.PopupNoticeService;
 import lombok.RequiredArgsConstructor;
@@ -19,15 +20,14 @@ public class PopupNoticeController {
 
     // 공지사항 등록 (관리자 전용)
     @PostMapping("/register")
-    public ResponseEntity<Map<String, String>> registerPopupNotice(@RequestBody Map<String, String> request) {
-        String content = request.get("content");
-        if (content == null || content.trim().isEmpty()) {
+    public ResponseEntity<Map<String, String>> registerPopupNotice(@RequestBody PopupNoticeRequest request) {
+        if (request.getContent() == null || request.getContent().trim().isEmpty()) {
             Map<String, String> errorResponse = new HashMap<>();
             errorResponse.put("error", "공지사항 내용이 필요합니다.");
             return ResponseEntity.badRequest().body(errorResponse);
         }
 
-        popupNoticeService.saveNotice(content);
+        popupNoticeService.saveNotice(request);
 
         Map<String, String> response = new HashMap<>();
         response.put("message", "공지사항이 성공적으로 등록되었습니다.");
