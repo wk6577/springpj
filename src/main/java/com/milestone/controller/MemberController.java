@@ -219,15 +219,12 @@ public class MemberController {
 
     @GetMapping("/search")
     public ResponseEntity<List<MemberSearchDto>> searchMembers(@RequestParam String query) {
-
-
         List<Member> members = searchService.memberIdSearch(query);
-        List<MemberSearchDto> results = new ArrayList<MemberSearchDto>();
-        MemberSearchDto dto = new MemberSearchDto();
+        List<MemberSearchDto> results = new ArrayList<>();
 
-        if(members != null){
-            for(Member mem : members){
-
+        if (members != null && !members.isEmpty()) {
+            for (Member mem : members) {
+                MemberSearchDto dto = new MemberSearchDto(); // ★ 객체 생성 위치 변경
                 dto.setMemberNo(mem.getMemberNo());
                 dto.setMemberName(mem.getMemberName());
                 dto.setMemberEmail(mem.getMemberEmail());
@@ -237,9 +234,10 @@ public class MemberController {
                 results.add(dto);
             }
 
+            System.out.println("닉넴 검색 결과 : " + results);
             return ResponseEntity.ok(results);
+        } else {
+            return ResponseEntity.ok(results); // 빈 리스트 반환
         }
-
-        return null;
     }
 }

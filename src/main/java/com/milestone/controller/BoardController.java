@@ -41,8 +41,14 @@ public class BoardController {
      */
     @GetMapping("/{boardNo}")
     public ResponseEntity<BoardResponse> getBoardById(@PathVariable Long boardNo, HttpSession session) {
+
+
+
         logger.info("게시물 조회 요청 - ID: {}", boardNo);
         BoardResponse board = boardService.getBoardById(boardNo, session);
+
+        System.out.println("board : " + board);
+
         return ResponseEntity.ok(board);
     }
 

@@ -1,6 +1,9 @@
 package com.milestone.controller;
 
+import com.milestone.dto.NoticeDto;
+import com.milestone.entity.Member;
 import com.milestone.entity.Notice;
+import com.milestone.repository.MemberRepository;
 import com.milestone.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -9,9 +12,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.servlet.http.HttpSession;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+
+import java.util.*;
 
 @RestController
 @RequestMapping("/api/notifications")
@@ -20,15 +22,39 @@ public class NotificationController {
 
     private static final Logger logger = LoggerFactory.getLogger(NotificationController.class);
     private final NotificationService notificationService;
+    private final MemberRepository memberRepository;
 
     /**
      * 현재 로그인한 사용자의 알림 목록 조회 API
      */
     @GetMapping
-    public ResponseEntity<List<Notice>> getNotifications(HttpSession session) {
+    public ResponseEntity<List<NoticeDto>> getNotifications(HttpSession session) {
+
+        System.out.println("알림 메세지 목록 누르면 여기 오는거 맞죠?");
+
         logger.info("알림 목록 조회 요청");
-        List<Notice> notifications = notificationService.getNotifications(session);
-        return ResponseEntity.ok(notifications);
+        List<Notice> noticelist = notificationService.getNotifications(session);
+        List<NoticeDto> notices = new ArrayList<NoticeDto>();
+        for(Notice notice : noticelist){
+            NoticeDto dto = new NoticeDto();
+
+            dto.setNoticeNo(notice.getNoticeNo());
+            dto.setMemberNo(notice.getMember().getMemberNo());
+            dto.setNoticeSender(notice.getNoticeSender());
+
+            Optional<Member> member = memberRepository.findById(notice.getNoticeSender());
+            dto.setNoticeSenderName(member.get().getMemberName());
+            dto.setNoticeSenderPhoto(member.get().getMemberPhoto());
+
+            dto.setNoticeType(notice.getNoticeType());
+            dto.setNoticeTypeNo(notice.getNoticeTypeNo());
+            dto.setNoticeMessage(notice.getNoticeMessage());
+            dto.setNoticeRead(notice.getNoticeRead());
+            dto.setNoticeInputdate(notice.getNoticeInputdate());
+            notices.add(dto);
+        }
+
+        return ResponseEntity.ok(notices);
     }
 
     /**

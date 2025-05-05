@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
@@ -33,6 +34,7 @@ public interface BoardRepository extends JpaRepository<Board, Long> {
 
     Board findByBoardNo(Long boardNo);
 
+
     // 📌 월별 게시글 수를 집계하는 쿼리
     // - FUNCTION('MONTH', b.boardInputdate): 게시글의 등록일(boardInputdate)에서 월만 추출
     // - COUNT(b): 해당 월에 작성된 게시글 수
@@ -48,5 +50,4 @@ public interface BoardRepository extends JpaRepository<Board, Long> {
 
     @Query("SELECT COUNT(b) FROM Board b")
     int countTotalPosts();
-
 }
