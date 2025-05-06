@@ -80,4 +80,15 @@ public class Member {
                 this.memberSuspendUntil.isAfter(LocalDateTime.now());
     }
 
+    @Column(length = 255)
+    private String memberSuspendReason;
+
+    public String getMemberSuspendReason() {
+        return memberSuspendReason;
+    }
+
+    public void setMemberSuspendReason(String reason) {
+        this.memberSuspendReason = reason;
+    }
+
 }

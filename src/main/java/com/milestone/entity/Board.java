@@ -53,4 +53,15 @@ public class Board {
     @CreationTimestamp
     @Column(name = "board_inputdate", nullable = false, updatable = false)
     private LocalDateTime boardInputdate;
+
+    @Column(nullable = false)
+    private boolean visible = true;
+
+    public boolean isVisible() {
+        return visible;
+    }
+
+    public void setVisible(boolean visible) {
+        this.visible = visible;
+    }
 }
