@@ -76,11 +76,16 @@ public class AdminMemberController {
     public ResponseEntity<Void> suspendMember(
             @PathVariable Long memberNo,
             @RequestBody SuspendMemberRequest request) {
+<<<<<<< HEAD
     
+=======
+
+>>>>>>> e6af618a5dc17b79dd6e8793d684fa98a8eff71b
         Optional<Member> optionalMember = memberRepository.findById(memberNo);
         if (optionalMember.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
+<<<<<<< HEAD
     
         Member member = optionalMember.get();
         member.setMemberStatus("suspended");
@@ -109,4 +114,15 @@ public ResponseEntity<Void> unsuspendMember(@PathVariable Long memberNo) {
     return ResponseEntity.ok().build();
 }
 
+=======
+
+        Member member = optionalMember.get();
+        member.setMemberStatus("suspended");
+        member.setMemberSuspendUntil(request.getSuspendUntil());
+        memberRepository.save(member);
+
+        return ResponseEntity.ok().build();
+    }
+
+>>>>>>> e6af618a5dc17b79dd6e8793d684fa98a8eff71b
 }

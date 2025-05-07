@@ -34,8 +34,12 @@ public class ReplyService {
      */
     @Transactional(readOnly = true)
     public List<ReplyResponse> getRepliesByBoard(Long boardNo) {
+<<<<<<< HEAD
         List<Reply> replies = replyRepository.findByBoardBoardNoAndReplyStatusOrderByReplyInputdateAsc(boardNo,
                 "active");
+=======
+        List<Reply> replies = replyRepository.findByBoardBoardNoAndReplyStatusOrderByReplyInputdateAsc(boardNo, "active");
+>>>>>>> e6af618a5dc17b79dd6e8793d684fa98a8eff71b
         return replies.stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
@@ -54,11 +58,14 @@ public class ReplyService {
         Member member = memberRepository.findById(memberNo)
                 .orElseThrow(() -> new IllegalArgumentException("회원을 찾을 수 없습니다."));
 
+<<<<<<< HEAD
         // 🔒 정지 상태 검사 추가
         if ("suspended".equals(member.getMemberStatus())) {
             throw new IllegalStateException("정지된 회원은 댓글을 작성할 수 없습니다.");
         }
 
+=======
+>>>>>>> e6af618a5dc17b79dd6e8793d684fa98a8eff71b
         Board board = boardRepository.findById(request.getBoardNo())
                 .orElseThrow(() -> new IllegalArgumentException("게시물을 찾을 수 없습니다."));
 
@@ -83,14 +90,22 @@ public class ReplyService {
 
         // 본인 게시물이 아닌 경우에만 알림 생성
         if (!board.getMember().getMemberNo().equals(memberNo)) {
+<<<<<<< HEAD
             notificationService.createReplyNotification(member, board.getMember(), board.getBoardNo(),
                     savedReply.getReplyNo());
+=======
+            notificationService.createReplyNotification(member, board.getMember(), board.getBoardNo(), savedReply.getReplyNo());
+>>>>>>> e6af618a5dc17b79dd6e8793d684fa98a8eff71b
         }
 
         // 부모 댓글이 있는 경우 대댓글 알림 생성
         if (parentReply != null && !parentReply.getMember().getMemberNo().equals(memberNo)) {
+<<<<<<< HEAD
             notificationService.createReplyNotification(member, parentReply.getMember(), board.getBoardNo(),
                     savedReply.getReplyNo());
+=======
+            notificationService.createReplyNotification(member, parentReply.getMember(), board.getBoardNo(), savedReply.getReplyNo());
+>>>>>>> e6af618a5dc17b79dd6e8793d684fa98a8eff71b
         }
 
         return convertToDto(savedReply);
