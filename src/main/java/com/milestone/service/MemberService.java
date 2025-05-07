@@ -395,7 +395,8 @@ public class MemberService {
         Member member = memberRepository.findByMemberEmail(request.getMemberEmail())
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 이메일입니다."));
 
-        if (!member.getMemberPassword().equals(request.getMemberPassword())) {
+        // PasswordUtils를 사용하여 비밀번호 검증
+        if (!PasswordUtils.verifyPassword(request.getMemberPassword(), member.getMemberPassword())) {
             throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
         }
 

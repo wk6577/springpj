@@ -57,16 +57,11 @@ public class MemberController {
      */
     @PostMapping("/login")
     public ResponseEntity<Object> login(@RequestBody @Valid MemberLoginRequest request,
-            HttpSession session) {
+                                        HttpSession session) {
         try {
             logger.info("로그인 요청 - 이메일: {}", request.getMemberEmail());
 
-            // 1. 로그인 처리 및 원본 Member 객체 가져오기
-            Member member = memberService.loginMember(request); // 👈 새로 만드는 메서드 (Member 반환)
-
-            // 2. 세션에 저장
-            session.setAttribute("loginUser", member);
-
+            // login 메서드만 사용하여 처리 (loginMember 사용하지 않음)
             MemberResponse response = memberService.login(request, session);
             logger.info("로그인 성공 - ID: {}", response.getMemberNo());
 

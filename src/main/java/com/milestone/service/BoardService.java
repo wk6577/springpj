@@ -37,6 +37,8 @@ public class BoardService {
     private final ReplyRepository replyRepository;
     private final FollowRepository followRepository;
     private final TagService tagService;
+    private final StudyImageService studyImageService;
+    private final StudyImageRepository studyImageRepository;
     private static final String SESSION_KEY = "LOGGED_IN_MEMBER";
 
     /**
@@ -279,6 +281,17 @@ public class BoardService {
         Board savedBoard = boardRepository.save(board);
         logger.info("게시물 저장 성공 - ID: {}", savedBoard.getBoardNo());
 
+        // 스터디 게시물인 경우, 임시 저장된 이미지를 게시물에 연결
+        if ("study".equals(request.getBoardType())) {
+            String studySessionId = (String) session.getAttribute("STUDY_SESSION_ID");
+            if (studySessionId != null) {
+                // 스터디 이미지 연결
+                studyImageService.linkImagesToBoard(studySessionId, savedBoard);
+                // 연결 후 세션에서 제거
+                session.removeAttribute("STUDY_SESSION_ID");
+            }
+        }
+
         // 태그 처리
         if (request.getTags() != null && !request.getTags().isEmpty()) {
             try {
@@ -465,7 +478,7 @@ public class BoardService {
         }
 
         Member loginUser = memberRepository.findById(memberNo)
-        .orElseThrow(() -> new IllegalArgumentException("회원을 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("회원을 찾을 수 없습니다."));
 
         Board board = boardRepository.findById(boardNo)
                 .orElseThrow(() -> new IllegalArgumentException("게시물을 찾을 수 없습니다: " + boardNo));
@@ -477,6 +490,17 @@ public class BoardService {
 
         // 연관된 태그 삭제
         tagService.deleteBoardTags(board);
+
+        // 스터디 게시물인 경우 스터디 이미지 삭제
+        if ("study".equals(board.getBoardType())) {
+            try {
+                studyImageRepository.deleteByBoardBoardNo(boardNo);
+                logger.info("스터디 이미지 삭제 성공 - 게시물 ID: {}", boardNo);
+            } catch (Exception e) {
+                logger.error("스터디 이미지 삭제 중 오류: {}", e.getMessage(), e);
+                // 이미지 삭제 실패해도 게시물은 삭제 진행
+            }
+        }
 
         // 게시물 삭제 (외래 키 제약조건에 따라 관련 이미지, 좋아요, 스크랩 등이 자동 삭제됨)
         boardRepository.delete(board);
