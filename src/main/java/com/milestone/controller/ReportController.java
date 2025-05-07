@@ -64,6 +64,7 @@ public class ReportController {
     @GetMapping("/recent")
     public ResponseEntity<List<ReportResponse>> getRecentReports() {
         List<ReportResponse> recentReports = reportService.getRecentReports(5);
+        System.out.println("📋 최근 신고 수: " + recentReports.size()); // 로그 찍기
         return ResponseEntity.ok(recentReports);
     }
 
