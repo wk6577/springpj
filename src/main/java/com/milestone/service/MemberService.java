@@ -389,4 +389,8 @@ public class MemberService {
             return new byte[0]; // 빈 바이트 배열 반환
         }
     }
+
+    public Member findByMemberNo(Long memberNo) {
+        return memberRepository.findByMemberNo(memberNo);
+    }
 }

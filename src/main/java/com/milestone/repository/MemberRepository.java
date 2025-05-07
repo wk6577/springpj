@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Repository
@@ -45,4 +46,5 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
         @Query("SELECT COUNT(m) FROM Member m WHERE m.memberLastlogin IS NOT NULL AND m.memberLastlogin >= :since")
         long countLoggedInUsersSince(java.time.LocalDateTime since);
 
+    Member findByMemberNo(Long memberNo);
 }
