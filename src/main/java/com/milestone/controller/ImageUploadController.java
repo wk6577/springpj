@@ -1,6 +1,10 @@
 package com.milestone.controller;
 
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.MediaTypeFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
@@ -18,7 +22,6 @@ import java.util.UUID;
 @RequestMapping("/api/images")
 public class ImageUploadController {
 
-    // 프로젝트 루트 디렉토리의 uploads 폴더를 사용
     private static final String UPLOAD_DIR = "uploads";
 
     @PostConstruct
@@ -34,51 +37,47 @@ public class ImageUploadController {
         }
     }
 
-    // ... existing code ...
-
     @PostMapping("/upload")
     public ResponseEntity<Map<String, String>> uploadImage(@RequestParam("file") MultipartFile file) {
         if (file.isEmpty()) {
-            return ResponseEntity.badRequest().body(Collections.singletonMap("error", "파일이 비어 있습니다."));
+            return ResponseEntity.badRequest()
+                    .body(Collections.singletonMap("error", "파일이 비어 있습니다."));
         }
 
         try {
-            // 원본 파일명에서 확장자 추출
             String originalFilename = StringUtils.cleanPath(file.getOriginalFilename());
-            String extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+            if (originalFilename.contains("..")) {
+                return ResponseEntity.badRequest()
+                        .body(Collections.singletonMap("error", "잘못된 파일명입니다."));
+            }
 
-            // UUID를 사용하여 고유한 파일명 생성
+            String extension = originalFilename.contains(".")
+                    ? originalFilename.substring(originalFilename.lastIndexOf('.'))
+                    : "";
             String filename = UUID.randomUUID().toString() + extension;
 
-            // 업로드 경로 설정
             Path uploadPath = Paths.get(UPLOAD_DIR).toAbsolutePath();
-            Path filePath = uploadPath.resolve(filename);
-
-            // 디렉토리가 없으면 생성
             if (!Files.exists(uploadPath)) {
                 Files.createDirectories(uploadPath);
             }
 
-            // 파일 저장
+            Path filePath = uploadPath.resolve(filename);
             Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
-            // API 경로로 이미지 URL 생성
+            // 반환할 URL (절대경로가 필요하다면 ServletUriComponentsBuilder 활용)
             String imageUrl = "/api/images/content/" + filename;
 
-            // JSON 응답 생성
             Map<String, String> response = new HashMap<>();
             response.put("imageUrl", imageUrl);
             response.put("filename", filename);
-            response.put("location", imageUrl); // TinyMCE 호환성을 위한 추가 필드
+            response.put("location", imageUrl);
 
             return ResponseEntity.ok(response);
 
         } catch (IOException e) {
             e.printStackTrace();
-            Map<String, String> errorResponse = new HashMap<>();
-            errorResponse.put("error", "이미지 저장 중 오류 발생: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(errorResponse);
+                    .body(Collections.singletonMap("error", "이미지 저장 중 오류 발생: " + e.getMessage()));
         }
     }
 }
