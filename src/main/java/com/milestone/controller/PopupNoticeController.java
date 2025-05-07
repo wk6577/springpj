@@ -50,4 +50,6 @@ public class PopupNoticeController {
         PopupNoticeResponse dto = PopupNoticeResponse.fromEntity(notice);
         return ResponseEntity.ok(dto);
     }
+
+
 }

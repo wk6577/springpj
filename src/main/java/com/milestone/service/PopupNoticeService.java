@@ -41,4 +41,8 @@ public class PopupNoticeService {
             throw new RuntimeException("공지 등록 실패", e);
         }
     }
+    public PopupNotice getLatestNotice() {
+        return popupNoticeRepository.findTopByOrderByCreatedAtDesc();
+    }
+
 }
