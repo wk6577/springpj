@@ -204,4 +204,14 @@ public class BoardController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
     }
+
+    /**
+     * 스터디 게시물 조회 API - 이미지 경로 처리 포함
+     */
+    @GetMapping("/study-board")
+    public ResponseEntity<List<BoardResponse>> getStudyBoardsWithProcessedContent(HttpSession session) {
+        logger.info("스터디 게시물 조회 요청 (콘텐츠 이미지 경로 처리 포함)");
+        List<BoardResponse> studyBoards = boardService.getStudyBoardsWithProcessedContent(session);
+        return ResponseEntity.ok(studyBoards);
+    }
 }

@@ -9,6 +9,9 @@ import org.springframework.web.multipart.MultipartFile;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.nio.file.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -34,16 +37,16 @@ public class ImageUploadController {
     // ... existing code ...
 
     @PostMapping("/upload")
-    public ResponseEntity<String> uploadImage(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<Map<String, String>> uploadImage(@RequestParam("file") MultipartFile file) {
         if (file.isEmpty()) {
-            return ResponseEntity.badRequest().body("파일이 비어 있습니다.");
+            return ResponseEntity.badRequest().body(Collections.singletonMap("error", "파일이 비어 있습니다."));
         }
 
         try {
             // 원본 파일명에서 확장자 추출
             String originalFilename = StringUtils.cleanPath(file.getOriginalFilename());
             String extension = originalFilename.substring(originalFilename.lastIndexOf("."));
-            
+
             // UUID를 사용하여 고유한 파일명 생성
             String filename = UUID.randomUUID().toString() + extension;
 
@@ -59,15 +62,23 @@ public class ImageUploadController {
             // 파일 저장
             Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
-            // 이미지 URL 생성 (상대 경로)
-            String imageUrl = "/uploads/" + filename;
-            
-            return ResponseEntity.ok(imageUrl);
+            // API 경로로 이미지 URL 생성
+            String imageUrl = "/api/images/content/" + filename;
+
+            // JSON 응답 생성
+            Map<String, String> response = new HashMap<>();
+            response.put("imageUrl", imageUrl);
+            response.put("filename", filename);
+            response.put("location", imageUrl); // TinyMCE 호환성을 위한 추가 필드
+
+            return ResponseEntity.ok(response);
 
         } catch (IOException e) {
             e.printStackTrace();
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", "이미지 저장 중 오류 발생: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("이미지 저장 중 오류 발생: " + e.getMessage());
+                    .body(errorResponse);
         }
     }
 }

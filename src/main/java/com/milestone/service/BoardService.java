@@ -613,5 +613,39 @@ public class BoardService {
         return convertToDto(updatedBoard);
     }
 
+    /**
+     * 외부 URL 경로를 API 경로로 변환 (이미지 표시 문제 해결)
+     */
+    public String convertImagePathsToApiUrls(String content) {
+        if (content == null) return "";
+        // uploads 경로를 API 경로로 변환
+        return content.replace("http://localhost:9000/uploads/", "/api/images/content/")
+                .replace("https://localhost:9000/uploads/", "/api/images/content/")
+                .replace("/uploads/", "/api/images/content/");
+    }
 
+    /**
+     * 스터디 게시물 전용 조회 (이미지 경로 처리 포함)
+     */
+    @Transactional(readOnly = true)
+    public List<BoardResponse> getStudyBoardsWithProcessedContent(HttpSession session) {
+        Long currentMemberNo = (Long) session.getAttribute(SESSION_KEY);
+        List<Board> boards = boardRepository.findStudyBoardsOrderByBoardInputdateDesc();
+
+        // 접근 권한이 있는 게시물만 필터링
+        return boards.stream()
+                .filter(board -> hasBoardAccess(board, currentMemberNo))
+                .map(board -> {
+                    // 기본 DTO 변환
+                    BoardResponse response = convertToDto(board);
+
+                    // 콘텐츠 이미지 경로 처리
+                    if (response.getBoardContent() != null) {
+                        response.setBoardContent(convertImagePathsToApiUrls(response.getBoardContent()));
+                    }
+
+                    return response;
+                })
+                .collect(Collectors.toList());
+    }
 }

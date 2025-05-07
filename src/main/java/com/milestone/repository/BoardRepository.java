@@ -50,4 +50,10 @@ public interface BoardRepository extends JpaRepository<Board, Long> {
 
     @Query("SELECT COUNT(b) FROM Board b")
     int countTotalPosts();
+
+    /**
+     * 스터디 타입 게시물만 조회
+     */
+    @Query("SELECT b FROM Board b WHERE b.boardType = 'study' ORDER BY b.boardInputdate DESC")
+    List<Board> findStudyBoardsOrderByBoardInputdateDesc();
 }
