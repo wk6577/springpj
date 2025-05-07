@@ -3,7 +3,12 @@ package com.milestone.service;
 import com.milestone.entity.Message;
 import com.milestone.repository.MessageRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -17,4 +22,65 @@ public class MessageService {
     }
 
 
+    public Page<Message> findMessageByNickname(Long userId, String sender, String content, Pageable pageable) {
+        if (sender != null && !sender.trim().isEmpty()) {
+            return messageRepository.findBySenderName(userId, sender.trim(), pageable);
+        } else if (content != null && !content.trim().isEmpty()) {
+            return messageRepository.findByContentText(userId, content.trim(), pageable);
+        } else {
+            return messageRepository.findAllMessages(userId, pageable);
+        }
+    }
+
+    public Page<Message> findSenderMessageByNickname(Long memberNo, String recipient, String content, Pageable pageable) {
+        if (recipient != null && !recipient.trim().isEmpty()) {
+            return messageRepository.findByreceiptName(memberNo, recipient.trim(), pageable);
+        } else if (content != null && !content.trim().isEmpty()) {
+            return messageRepository.findByfromContentText(memberNo, content.trim(), pageable);
+        } else {
+            return messageRepository.findAllSentMessages(memberNo, pageable);
+        }
+
+    }
+
+    public int deleteReceivedMessages(List<Long> messageIds) {
+        int num = 0;
+        for(Long id : messageIds){
+            Optional<Message> message = messageRepository.findById(id);
+            if(message.get().getMessageFromVisible() == false){
+               num += messageRepository.updateMessageToVisible(id);
+            }else{
+                messageRepository.deleteById(id);
+                num+=1;
+            }
+
+        }
+
+        return num;
+
+    }
+
+    public int deleteSentMessages(List<Long> messageIds) {
+        int num = 0;
+        for(Long id : messageIds){
+            Optional<Message> message = messageRepository.findById(id);
+            if(message.get().getMessageToVisible() == false){
+                num += messageRepository.updateMessageFromVisible(id);
+            }else{
+                messageRepository.deleteById(id);
+                num+=1;
+            }
+
+        }
+
+        return num;
+    }
+
+    public Message getMessageById(Long messageNo) {
+        return messageRepository.findById(messageNo).get();
+    }
+
+    public int markMessageAsRead(Long messageNo) {
+        return messageRepository.updateMessageToCheckToTrue(messageNo);
+    }
 }

@@ -37,8 +37,8 @@ public class Message {
     @Column(name = "message_from_visible")
     private Boolean messageFromVisible = true;
 
-    @Column(name = "message_from_check")
-    private Boolean messageFromCheck = false;
+    @Column(name = "message_to_check")
+    private Boolean messageToCheck = false;
 
     @Column(name = "message_inputdate")
     private LocalDateTime messageInputdate = LocalDateTime.now();
