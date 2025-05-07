@@ -94,4 +94,17 @@ public class Member {
         return this.memberNickname;
     }
 
+    @Column(name = "role")
+    private String role;
+    
+    public String getRole() {
+        return this.role;
+    }
+    
+    public boolean isAdmin() {
+        return "ADMIN".equals(this.role);
+    }
+
+
+
 }

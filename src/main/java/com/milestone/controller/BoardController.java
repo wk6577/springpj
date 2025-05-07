@@ -150,18 +150,18 @@ public class BoardController {
     public ResponseEntity<Object> deleteBoard(@PathVariable Long boardNo, HttpSession session) {
         try {
             logger.info("게시물 삭제 요청 - ID: {}", boardNo);
-            boardService.deleteBoard(boardNo, session);
-
+            boardService.deleteBoard(boardNo, session); // <- 여기서 권한 체크 포함됨
+    
             Map<String, String> response = new HashMap<>();
             response.put("message", "게시물이 삭제되었습니다.");
             return ResponseEntity.ok(response);
-
+    
         } catch (IllegalArgumentException e) {
             logger.warn("게시물 삭제 실패 - 권한 없음: {}", e.getMessage());
             Map<String, String> errorResponse = new HashMap<>();
             errorResponse.put("error", e.getMessage());
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
-
+    
         } catch (Exception e) {
             logger.error("게시물 삭제 실패 - 서버 오류: {}", e.getMessage(), e);
             Map<String, String> errorResponse = new HashMap<>();

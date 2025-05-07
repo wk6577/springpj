@@ -200,7 +200,8 @@ public class BoardService {
 
     /**
      * 게시물 접근 권한 검사 후 예외 발생
-     * @param board 접근하려는 게시물
+     * 
+     * @param board           접근하려는 게시물
      * @param currentMemberNo 현재 로그인한 회원 번호
      * @throws IllegalArgumentException 접근 권한이 없는 경우
      */
@@ -291,7 +292,7 @@ public class BoardService {
         }
 
         // 이미지 처리 - MySQL에 직접 저장하는 방식으로 변경
-        String firstImageUrl = null;                      // 대표 이미지 URL 변수 선언
+        String firstImageUrl = null; // 대표 이미지 URL 변수 선언
         List<MultipartFile> images = request.getImages(); // 누락된 선언 추가
 
         if (images != null && !images.isEmpty()) {
@@ -302,7 +303,8 @@ public class BoardService {
                 // 새 이미지 저장
                 for (int i = 0; i < images.size(); i++) {
                     MultipartFile image = images.get(i);
-                    if (image == null || image.isEmpty()) continue;
+                    if (image == null || image.isEmpty())
+                        continue;
 
                     // 파일 이름 및 확장자
                     String originalFilename = image.getOriginalFilename();
@@ -414,7 +416,8 @@ public class BoardService {
                 // 새 이미지 저장
                 for (int i = 0; i < images.size(); i++) {
                     MultipartFile image = images.get(i);
-                    if (image == null || image.isEmpty()) continue;
+                    if (image == null || image.isEmpty())
+                        continue;
 
                     // 파일 이름 및 확장자
                     String originalFilename = image.getOriginalFilename();
@@ -461,11 +464,14 @@ public class BoardService {
             throw new IllegalArgumentException("로그인이 필요합니다.");
         }
 
+        Member loginUser = memberRepository.findById(memberNo)
+        .orElseThrow(() -> new IllegalArgumentException("회원을 찾을 수 없습니다."));
+
         Board board = boardRepository.findById(boardNo)
                 .orElseThrow(() -> new IllegalArgumentException("게시물을 찾을 수 없습니다: " + boardNo));
 
-        // 게시물 작성자 확인
-        if (!board.getMember().getMemberNo().equals(memberNo)) {
+        // ✅ 작성자이거나 관리자일 경우만 삭제 허용
+        if (!board.getMember().getMemberNo().equals(loginUser.getMemberNo()) && !loginUser.isAdmin()) {
             throw new IllegalArgumentException("게시물을 삭제할 권한이 없습니다.");
         }
 
@@ -617,7 +623,8 @@ public class BoardService {
      * 외부 URL 경로를 API 경로로 변환 (이미지 표시 문제 해결)
      */
     public String convertImagePathsToApiUrls(String content) {
-        if (content == null) return "";
+        if (content == null)
+            return "";
         // uploads 경로를 API 경로로 변환
         return content.replace("http://localhost:9000/uploads/", "/api/images/content/")
                 .replace("https://localhost:9000/uploads/", "/api/images/content/")

@@ -72,7 +72,7 @@ public class MemberService {
                     .memberEmail(request.getMemberEmail())
                     .memberPassword(hashedPassword)
                     .memberPhone(request.getMemberPhone())
-                    .memberPhoto(DEFAULT_PROFILE_IMAGE_PATH)  // 기본 프로필 이미지 설정
+                    .memberPhoto(DEFAULT_PROFILE_IMAGE_PATH) // 기본 프로필 이미지 설정
                     .memberIntroduce(request.getMemberIntroduce())
                     .memberVisible(request.getMemberVisible())
                     .memberStatus("active")
@@ -195,7 +195,8 @@ public class MemberService {
 
             // 공개 설정 변경 시 해당 회원의 모든 게시물에도 같은 설정 적용
             // 회원 프로필의 공개 설정이 변경되면 기존 게시물도 모두 동일하게 변경
-            List<Board> memberBoards = boardRepository.findByMemberMemberNoOrderByBoardInputdateDesc(member.getMemberNo());
+            List<Board> memberBoards = boardRepository
+                    .findByMemberMemberNoOrderByBoardInputdateDesc(member.getMemberNo());
             for (Board board : memberBoards) {
                 board.setBoardVisible(request.getMemberVisible());
             }
@@ -390,7 +391,19 @@ public class MemberService {
         }
     }
 
+    public Member loginMember(MemberLoginRequest request) {
+        Member member = memberRepository.findByMemberEmail(request.getMemberEmail())
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 이메일입니다."));
+
+        if (!member.getMemberPassword().equals(request.getMemberPassword())) {
+            throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
+        }
+
+        return member;
+    }
+
     public Member findByMemberNo(Long memberNo) {
         return memberRepository.findByMemberNo(memberNo);
     }
+
 }
