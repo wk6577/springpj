@@ -2,6 +2,7 @@ package com.milestone.entity;
 
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -15,9 +16,6 @@ public class Report {
     @Column(nullable = false)
     private Long reportedBoardNo;
 
-    @Column(nullable = false)
-    private Long reporterMemberNo;
-
     @Column(length = 255)
     private String reason;
 
@@ -25,18 +23,14 @@ public class Report {
     @Column(nullable = false)
     private ReportStatus status = ReportStatus.PENDING;
 
-    public ReportStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(ReportStatus status) {
-        this.status = status;
-    }
-
     @CreationTimestamp
     private LocalDateTime createdAt;
 
-    // getters and setters
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "reporter_member_no", nullable = false) // 외래키 명시
+    private Member reporter;
+
+    // ===== Getters & Setters =====
 
     public Long getReportId() {
         return reportId;
@@ -54,14 +48,6 @@ public class Report {
         this.reportedBoardNo = reportedBoardNo;
     }
 
-    public Long getReporterMemberNo() {
-        return reporterMemberNo;
-    }
-
-    public void setReporterMemberNo(Long reporterMemberNo) {
-        this.reporterMemberNo = reporterMemberNo;
-    }
-
     public String getReason() {
         return reason;
     }
@@ -70,11 +56,27 @@ public class Report {
         this.reason = reason;
     }
 
+    public ReportStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(ReportStatus status) {
+        this.status = status;
+    }
+
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public Member getReporter() {
+        return reporter;
+    }
+
+    public void setReporter(Member reporter) {
+        this.reporter = reporter;
     }
 }

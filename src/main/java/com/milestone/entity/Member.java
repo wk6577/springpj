@@ -90,5 +90,8 @@ public class Member {
     public void setMemberSuspendReason(String reason) {
         this.memberSuspendReason = reason;
     }
+    public String getNickname() {
+        return this.memberNickname;
+    }
 
 }

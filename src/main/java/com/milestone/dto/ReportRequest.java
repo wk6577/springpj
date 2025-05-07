@@ -1,18 +1,18 @@
 package com.milestone.dto;
 
 public class ReportRequest {
-    private Long boardId;
+    private Long reportedBoardNo;
     private String reason;
 
     public ReportRequest() {
     }
 
-    public Long getBoardId() {
-        return boardId;
+    public Long getReportedBoardNo() {
+        return reportedBoardNo;
     }
 
-    public void setBoardId(Long boardId) {
-        this.boardId = boardId;
+    public void setReportedBoardNo(Long reportedBoardNo) {
+        this.reportedBoardNo = reportedBoardNo;
     }
 
     public String getReason() {
@@ -21,5 +21,13 @@ public class ReportRequest {
 
     public void setReason(String reason) {
         this.reason = reason;
+    }
+
+    @Override
+    public String toString() {
+        return "ReportRequest{" +
+                "reportedBoardNo=" + reportedBoardNo +
+                ", reason='" + reason + '\'' +
+                '}';
     }
 }

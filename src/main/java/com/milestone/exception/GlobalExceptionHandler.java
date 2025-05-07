@@ -11,6 +11,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.springframework.http.MediaType;
+
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -76,6 +78,9 @@ public class GlobalExceptionHandler {
                 .path(request.getRequestURI())
                 .build();
 
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        return ResponseEntity
+        .status(HttpStatus.INTERNAL_SERVER_ERROR)
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(errorResponse);
     }
 }
