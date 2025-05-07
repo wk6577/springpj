@@ -116,12 +116,17 @@ public class MemberService {
             member.setMemberLastlogin(LocalDateTime.now());
             memberRepository.save(member);
 
+            // DTO로 변환
+            MemberResponse loginUserDto = MemberResponse.fromEntity(member);
+
             // 세션에 로그인 정보 저장
             session.setAttribute(SESSION_KEY, member.getMemberNo());
+            session.setAttribute("loginUser", loginUserDto);
+
             logger.info("로그인 성공: ID={}", member.getMemberNo());
 
             // 사용자 정보를 DTO로 변환하여 반환
-            return MemberResponse.fromEntity(member);
+            return loginUserDto;
         } catch (IllegalArgumentException e) {
             logger.warn("로그인 실패: {}", e.getMessage());
             throw e;
