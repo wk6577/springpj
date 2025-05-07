@@ -36,9 +36,12 @@ public class ReportService {
     }
 
     public Report createReport(Long reportedBoardNo, Long reporterMemberNo, String reason) {
+        Member reporter = memberRepository.findById(reporterMemberNo)
+        .orElseThrow(() -> new IllegalArgumentException("신고한 회원이 존재하지 않습니다."));
+
         Report report = new Report();
         report.setReportedBoardNo(reportedBoardNo);
-        report.setReporterMemberNo(reporterMemberNo);
+        report.setReporter(reporter);
         report.setReason(reason);
         report.setStatus(ReportStatus.PENDING);
         return reportRepository.save(report);
@@ -132,7 +135,10 @@ public class ReportService {
         List<Report> reports = reportRepository.findAllByOrderByCreatedAtDesc(pageable);
 
         return reports.stream()
-                .map(ReportResponse::fromEntity)
+                .map(report -> {
+                    String nickname = report.getReporter() != null ? report.getReporter().getNickname() : "알 수 없음";
+                    return ReportResponse.fromEntity(report, nickname);
+                })
                 .collect(Collectors.toList());
     }
 

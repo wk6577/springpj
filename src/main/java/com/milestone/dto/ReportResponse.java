@@ -23,7 +23,8 @@ public class ReportResponse {
         return ReportResponse.builder()
                 .reportId(report.getReportId())
                 .reportedBoardNo(report.getReportedBoardNo())
-                .reporterMemberNo(report.getReporterMemberNo())
+                .reporterMemberNo(
+                        report.getReporter() != null ? report.getReporter().getMemberNo() : null)
                 .reporterNickname(
                         report.getReporter() != null ? report.getReporter().getNickname() : "(알 수 없음)")
                 .reason(report.getReason())
