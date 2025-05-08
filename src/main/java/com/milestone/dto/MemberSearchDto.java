@@ -18,4 +18,6 @@ public class MemberSearchDto {
     public String memberPhoto;
     public String memberPhotoType;
 
+    
+
 }

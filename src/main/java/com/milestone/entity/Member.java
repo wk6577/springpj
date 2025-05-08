@@ -94,15 +94,12 @@ public class Member {
         return this.memberNickname;
     }
 
-    @Column(name = "role")
-    private String role;
-    
-    public String getRole() {
-        return this.role;
-    }
+    @Column(name = "role", nullable = false, columnDefinition = "VARCHAR(10) DEFAULT 'USER'")
+    private String role; // ADMIN or USER
     
     public boolean isAdmin() {
-        return "ADMIN".equals(this.role);
+        // 기존: return "ADMIN".equals(this.role);
+        return "ADMIN".equals(this.memberRole); // 🔧 수정
     }
 
 
