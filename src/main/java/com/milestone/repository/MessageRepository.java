@@ -82,4 +82,9 @@ public interface MessageRepository extends JpaRepository<Message,Long> {
     @Transactional
     int updateMessageToCheckToTrue(@Param("messageNo") Long messageNo);
 
+    // 읽지 않은 쪽지 수 조회 메소드
+    @Query("SELECT COUNT(m) FROM Message m WHERE m.messageTo.memberNo = :memberNo AND m.messageToCheck = false")
+    int countUnreadMessagesByMemberNo(@Param("memberNo") Long memberNo);
+
+
 }

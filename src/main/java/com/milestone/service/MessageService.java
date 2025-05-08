@@ -64,6 +64,9 @@ public class MessageService {
         int num = 0;
         for(Long id : messageIds){
             Optional<Message> message = messageRepository.findById(id);
+
+            messageRepository.updateMessageToCheckToTrue(message.get().getMessageNo());
+
             if(message.get().getMessageToVisible() == false){
                 num += messageRepository.updateMessageFromVisible(id);
             }else{
@@ -82,5 +85,9 @@ public class MessageService {
 
     public int markMessageAsRead(Long messageNo) {
         return messageRepository.updateMessageToCheckToTrue(messageNo);
+    }
+
+    public int countUnreadMessages(Long memberNo) {
+            return messageRepository.countUnreadMessagesByMemberNo(memberNo);
     }
 }

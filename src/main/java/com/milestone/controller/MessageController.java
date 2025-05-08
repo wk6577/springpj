@@ -363,6 +363,19 @@ public class MessageController {
                     .body("쪽지 읽음 처리 중 오류가 발생했습니다: " + e.getMessage());
         }
     }
+
+    @GetMapping("/unread-count/{memberNo}")
+    public ResponseEntity<?> getUnreadMessageCount(@PathVariable Long memberNo) {
+
+
+        try {
+            int count = messageService.countUnreadMessages(memberNo);
+            return ResponseEntity.ok(Map.of("count", count));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("읽지 않은 쪽지 수 조회 중 오류가 발생했습니다: " + e.getMessage());
+        }
+    }
 }
 
 
