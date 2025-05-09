@@ -3,8 +3,11 @@ package com.milestone.repository;
 import com.milestone.dto.MemberSearchDto;
 import com.milestone.entity.Member;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
@@ -46,5 +49,13 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
         @Query("SELECT COUNT(m) FROM Member m WHERE m.memberLastlogin IS NOT NULL AND m.memberLastlogin >= :since")
         long countLoggedInUsersSince(java.time.LocalDateTime since);
 
-    Member findByMemberNo(Long memberNo);
+        Member findByMemberNo(Long memberNo);
+
+
+        boolean existsByMemberNameAndMemberEmail(String memberName, String memberEmail);
+
+        @Modifying
+        @Transactional
+        @Query("UPDATE Member m SET m.memberPassword = :password WHERE m.memberNo = :id")
+        int updatePasswordById(@Param("password") String password, @Param("id") Long id);
 }

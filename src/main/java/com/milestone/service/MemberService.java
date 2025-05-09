@@ -10,11 +10,16 @@ import com.milestone.entity.Member;
 import com.milestone.entity.Reply;
 import com.milestone.repository.*;
 import com.milestone.util.PasswordUtils;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -23,7 +28,9 @@ import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -45,26 +52,21 @@ public class MemberService {
     /**
      * 회원 가입
      */
+
+    public boolean isNicknameExists(String nickname) {
+        return memberRepository.existsByMemberNickname(nickname);
+    }
+
+    public boolean isEmailExists(String email) {
+        return memberRepository.existsByMemberEmail(email);
+    }
     @Transactional
     public MemberResponse join(MemberJoinRequest request) {
-        logger.info("회원가입 시도: {}", request.getMemberEmail());
-
-        // 이메일 중복 검사
-        if (memberRepository.existsByMemberEmail(request.getMemberEmail())) {
-            logger.warn("이메일 중복: {}", request.getMemberEmail());
-            throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
-        }
-
-        // 닉네임 중복 검사
-        if (memberRepository.existsByMemberNickname(request.getMemberNickname())) {
-            logger.warn("닉네임 중복: {}", request.getMemberNickname());
-            throw new IllegalArgumentException("이미 사용 중인 닉네임입니다.");
-        }
-
+    
         try {
             // 비밀번호 암호화
             String hashedPassword = PasswordUtils.hashPassword(request.getMemberPassword());
-
+            System.out.println("회원가입 여기임?");
             // Member 엔티티 생성 및 저장
             Member member = Member.builder()
                     .memberName(request.getMemberName())
@@ -412,4 +414,7 @@ public class MemberService {
         return memberRepository.findByMemberNo(memberNo);
     }
 
+    public int updatePassword(Member member) {
+        return memberRepository.updatePasswordById(member.getMemberPassword(), member.getMemberNo());
+    }
 }

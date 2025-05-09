@@ -1,5 +1,9 @@
 package com.milestone.entity;
 
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -23,18 +27,25 @@ public class Member {
     private Long memberNo;
 
     @Column(name = "member_name", nullable = false, length = 20)
+    @NotBlank(message = "이름은 필수 입력 항목입니다.")
     private String memberName;
 
     @Column(name = "member_nickname", nullable = false, length = 20, unique = true)
+    @NotBlank(message = "닉네임은 필수 입력 항목입니다.")
+    @Size(max = 20, message = "닉네임은 최대 20글자까지 입력 가능합니다.")
     private String memberNickname;
 
     @Column(name = "member_email", nullable = false, length = 30, unique = true)
+    @NotBlank(message = "이메일은 필수 입력 항목입니다.")
+    @Email(message = "유효한 이메일 주소를 입력해주세요.")
     private String memberEmail;
 
     @Column(name = "member_password", nullable = false, length = 100)
+    @NotBlank(message = "비밀번호는 필수 입력 항목입니다.")
     private String memberPassword;
 
     @Column(name = "member_phone", length = 20)
+    @NotBlank(message = "전화번호는 필수 입력 항목입니다.")
     private String memberPhone;
 
     @Column(name = "member_photo", length = 1000)

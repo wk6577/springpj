@@ -1,5 +1,6 @@
 package com.milestone.dto;
 
+import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -32,6 +33,7 @@ public class MemberJoinRequest {
     @Size(min = 6, max = 20, message = "비밀번호는 6자 이상 20자 이하로 입력해주세요.")
     private String memberPassword;
 
+    @NotBlank(message = "전화번호는 필수 입력 항목입니다.")
     private String memberPhone;
 
     private String memberPhoto;

@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -30,26 +31,39 @@ public class MemberController {
      * 회원 가입 API
      */
     @PostMapping("/join")
-    public ResponseEntity<Object> join(@RequestBody @Valid MemberJoinRequest request) {
-        try {
-            logger.info("회원가입 요청 - 이메일: {}, 닉네임: {}", request.getMemberEmail(), request.getMemberNickname());
-            MemberResponse response = memberService.join(request);
-            logger.info("회원가입 성공 - ID: {}", response.getMemberNo());
+    public ResponseEntity<Object> join(@RequestBody @Valid MemberJoinRequest request, BindingResult bindingResult) {
 
-            return ResponseEntity.status(HttpStatus.CREATED).body(response);
-        } catch (IllegalArgumentException e) {
-            logger.warn("회원가입 실패 - 잘못된 요청: {}", e.getMessage());
+        System.out.println("request : " + request);
 
-            Map<String, String> errorResponse = new HashMap<>();
-            errorResponse.put("error", e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
-        } catch (Exception e) {
-            logger.error("회원가입 실패 - 서버 오류: {}", e.getMessage(), e);
-
-            Map<String, String> errorResponse = new HashMap<>();
-            errorResponse.put("error", "회원가입 처리 중 오류가 발생했습니다.");
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        // 유효성 검사 에러 처리
+        if (bindingResult.hasErrors()) {
+            Map<String, String> errors = new HashMap<>();
+            bindingResult.getFieldErrors().forEach(error ->
+                    errors.put(error.getField(), error.getDefaultMessage())
+            );
+            return ResponseEntity.badRequest().body(errors);
         }
+
+        // 닉네임 중복 검사
+        if (memberService.isNicknameExists(request.getMemberNickname())) {
+            return ResponseEntity.badRequest().body(
+                    Collections.singletonMap("memberNickname", "이미 사용 중인 닉네임입니다.")
+            );
+        }
+
+        // 이메일 중복 검사
+        if (memberService.isEmailExists(request.getMemberEmail())) {
+            return ResponseEntity.badRequest().body(
+                    Collections.singletonMap("memberEmail", "이미 사용 중인 이메일입니다.")
+            );
+        }
+
+
+        MemberResponse response = memberService.join(request);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+
+
     }
 
     /**

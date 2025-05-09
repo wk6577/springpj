@@ -6,6 +6,7 @@ import com.milestone.dto.MessageDto;
 import com.milestone.dto.MessageRequest;
 import com.milestone.entity.Member;
 import com.milestone.entity.Message;
+import com.milestone.repository.MessageRepository;
 import com.milestone.service.MemberService;
 import com.milestone.service.MessageService;
 import jakarta.servlet.http.HttpSession;
@@ -28,6 +29,7 @@ public class MessageController {
 
     private final MemberService memberService;
     private final MessageService messageService;
+    private final MessageRepository messageRepository;
 
     @PostMapping
     public ResponseEntity<?> sendMessage(@RequestBody MessageRequest requestDTO,HttpSession session) {
@@ -374,6 +376,68 @@ public class MessageController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("읽지 않은 쪽지 수 조회 중 오류가 발생했습니다: " + e.getMessage());
+        }
+    }
+
+    @DeleteMapping("/clear-to")
+    public ResponseEntity<?> clearAllMessages(HttpSession session) {
+        // 현재 로그인한 사용자 ID 가져오기
+        Long memberNo = (Long) session.getAttribute("LOGGED_IN_MEMBER");
+
+        if (memberNo == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "로그인이 필요합니다."));
+        }
+
+        try {
+            // 현재 사용자의 모든 쪽지 삭제
+            messageService.deleteAllByMessageTo(memberNo);
+
+
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "쪽지함이 성공적으로 비워졌습니다."
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of(
+                            "success", false,
+                            "error", "쪽지함을 비우는 중 오류가 발생했습니다: " + e.getMessage()
+                    ));
+        }
+    }
+
+    @DeleteMapping("/clear-sent")
+    public ResponseEntity<?> clearSentMessages(HttpSession session) {
+
+
+        System.out.println("sent");
+        // 현재 로그인한 사용자 ID 가져오기
+        Long memberNo = (Long) session.getAttribute("LOGGED_IN_MEMBER");
+
+        System.out.println("memberno : " + memberNo);
+
+        if (memberNo == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "로그인이 필요합니다."));
+        }
+
+        try {
+            System.out.println("모든쪽지 지우기");
+            // 현재 사용자의 모든 쪽지 삭제
+            messageService.deleteAllByMessageFrom(memberNo);
+
+
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "쪽지함이 성공적으로 비워졌습니다."
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of(
+                            "success", false,
+                            "error", "쪽지함을 비우는 중 오류가 발생했습니다: " + e.getMessage()
+                    ));
         }
     }
 }

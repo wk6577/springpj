@@ -90,4 +90,50 @@ public class MessageService {
     public int countUnreadMessages(Long memberNo) {
             return messageRepository.countUnreadMessagesByMemberNo(memberNo);
     }
+
+
+
+    public void deleteAllByMessageTo(Long memberNo) {
+        int num = 0;
+        List<Long> messages = messageRepository.findReceivedMessagesByMemberNoAndVisibleFromSenderFalse(memberNo);
+
+        if (!messages.isEmpty()) {
+            messageRepository.deleteAllByMessageNos(messages);
+        }
+
+
+        List<Long> messagess = messageRepository.findReceivedMessagesByMemberNoAndVisibleFromSender(memberNo);
+        if(!messagess.isEmpty()){
+        messageRepository.clearReceivedMessages(messagess);
+        }
+
+
+        System.out.println("TOSUM"+ num);
+    }
+
+    public void deleteAllByMessageFrom(Long memberNo) {
+
+        int num = 0;
+        // 1. 수신자에게 이미 안 보이는 메시지들은 완전히 삭제
+        List<Long> messagesToDelete = messageRepository.findSentMessagesByMemberNoAndVisibleToReceiverFalse(memberNo);
+
+        System.out.println("asfsa : " + messagesToDelete );
+        if (!messagesToDelete.isEmpty()) {
+            messageRepository.deleteAllByMessageNos(messagesToDelete);
+            System.out.println("물리적으로 삭제된 메시지 수: " + messagesToDelete.size());
+        }
+
+
+
+        List<Long> messagesToUpdate = messageRepository.findSentMessagesByMemberNoAndVisibleToReceiver(memberNo);
+
+
+        System.out.println("asfsa : " + messagesToUpdate );
+        if(!messagesToUpdate.isEmpty()){
+                num+=messageRepository.clearSentMessages(messagesToUpdate);
+
+        }
+
+        System.out.println("FRROMNUM : " + num);
+    }
 }

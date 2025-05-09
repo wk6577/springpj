@@ -10,6 +10,8 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Repository
 public interface MessageRepository extends JpaRepository<Message,Long> {
 
@@ -87,4 +89,41 @@ public interface MessageRepository extends JpaRepository<Message,Long> {
     int countUnreadMessagesByMemberNo(@Param("memberNo") Long memberNo);
 
 
+
+
+
+    @Modifying
+    @Query(value = "UPDATE message SET message_to_visible = false WHERE message_to IN :memberNos", nativeQuery = true)
+    int clearReceivedMessages(@Param("memberNo") List<Long> memberNo);
+
+    @Modifying
+    @Query(value = "UPDATE message SET message_from_visible = false WHERE message_from IN :memberNos", nativeQuery = true)
+    int clearSentMessages(@Param("memberNo") List<Long> memberNos);
+
+
+
+    @Query(value = "SELECT message_no FROM message WHERE message_to = :memberNo AND message_from_visible = false", nativeQuery = true)
+    List<Long> findReceivedMessagesByMemberNoAndVisibleFromSenderFalse(@Param("memberNo") Long memberNo);
+
+
+    @Query(value = "SELECT message_no FROM message WHERE message_to = :memberNo AND message_from_visible = true", nativeQuery = true)
+    List<Long> findReceivedMessagesByMemberNoAndVisibleFromSender(@Param("memberNo") Long memberNo);
+
+
+
+
+    @Query(value = "SELECT message_no FROM message WHERE message_from = :memberNo AND message_to_visible = true", nativeQuery = true)
+    List<Long> findSentMessagesByMemberNoAndVisibleToReceiver(@Param("memberNo") Long memberNo);
+
+
+
+    @Query(value = "SELECT message_no FROM message WHERE message_from = :memberNo AND message_to_visible = false", nativeQuery = true)
+    List<Long> findSentMessagesByMemberNoAndVisibleToReceiverFalse(@Param("memberNo") Long memberNo);
+
+
+
+    @Modifying
+    @Transactional
+    @Query(value="DELETE FROM message WHERE message_no IN :messageNos", nativeQuery = true)
+    void deleteAllByMessageNos(@Param("messageNos") List<Long> messageNos);
 }
